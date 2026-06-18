@@ -156,7 +156,7 @@ def magnet(arg):
     # np.sign är ekvivalent med VBA:s Sgn()
     return (np.sign(np.sin(arg)) * (np.sin(arg) ** 2) + 0.228 * np.sin(3 * arg)) / 0.7724
 
-def phases_at_angles(generator:Generator, phase_count_for_slots, electrical_angles):
+def phases_at_angles(generator:Generator, phase_count_for_slots:np.ndarray):
     N = 100
     Ts = np.linspace(0,0.2, 100) # [s] Timestamps
     beta_T = Ts*generator.electrical_angular_velocity # [-]
@@ -167,12 +167,11 @@ def phases_at_angles(generator:Generator, phase_count_for_slots, electrical_angl
     # BC13 = fas brusad
     phase_curve = np.zeros(N)
     for i,beta in enumerate(beta_T):
-        magnet_results = magnet(beta+electrical_angles)
+        magnet_results = magnet(beta+generator.electric_angles)
         print(generator.conductor_U)
         print(beta, phase_count_for_slots)
-        phase_curve[i] = magnet_results@phase_count_for_slots*generator.conductor_U
+        phase_curve[i] = magnet_results@phase_count_for_slots*generator.conductor_U+ (np.random.rand() * noise_offset[0])
     plt.plot(Ts, phase_curve)
-    plt.show()
 
 
 
@@ -188,6 +187,10 @@ def calculate():
     slots = winding.slots
 
     phase_count_for_slots = count_phases_for_slots(poles,winding.winding_matrix)
-    phases_at_angles(generator, phase_count_for_slots[0,:], generator.electric_angles)
+    #! phase_count_for_slots should have 5 phases
+    for i in np.arange(generator.wind.phases):
+        phases_at_angles(generator, phase_count_for_slots[i,:])
+    
+    plt.show()
 
 calculate()
