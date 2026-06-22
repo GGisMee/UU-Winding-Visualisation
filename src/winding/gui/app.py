@@ -48,7 +48,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.bind("<Control-0>", lambda e: self.reset_scale())
         self.bind("<Control-MouseWheel>", self.on_mousewheel_scale)
         
-        self.title("Application")
+        self.title("Winding Visualisation")
         self.geometry("1200x750")
         self.minsize(1000, 700)
         self.configure(fg_color=Theme.BG_MAIN.value)

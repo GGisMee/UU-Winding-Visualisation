@@ -1,4 +1,3 @@
-# gui/theme.py
 from enum import Enum, nonmember
 
 class FontStyles:
