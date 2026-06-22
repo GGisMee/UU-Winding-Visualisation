@@ -26,17 +26,34 @@ class Winding:
     stator_fill: float = 0.5  # [-] stator factor filled by copper
     rotor_fill: float = 0.5  # [-] fraction of rotor filled by permanent magnet
 
-    # winding_matrix:np.ndarray = np.zeros(shape=(poles, slots)) # Matrix to encode the windings
-    # ex nedan
-    winding_matrix= np.array([
-        [ 1,  1,  1, -3, -3,  2,  2,  2, -1, -1,  3,  3,  3, -2, -2,  1,  1,  1, -3, -3,  5,  5,  2, -1, -1,  3,  3,  3, -5, -2,  3,  3,  4, -2, -2,  1, -4,  1],
-        [ 1,  1,  1, -3, -3,  2,  2,  2, -1, -1,  3,  3,  3, -2, -2,  1,  1,  1, -3, -3,  5,  5,  2, -1, -1,  3,  3,  3, -5, -5,  3,  3,  4, -2, -2,  1, -4,  1],
-        [ 1,  1, -3, -3, -3,  2,  2, -1, -1, -1,  3,  3, -2, -2, -2,  1,  1, -3, -3, -3,  5,  5, -1, -1, -1,  3,  3, -2, -5, -5,  3,  3,  4, -2, -2,  1, -4, -3],
-        [ 1,  1, -3, -3, -3,  2,  2, -1, -1, -1,  3,  3, -2, -2, -2,  1,  1, -3, -3, -3,  5,  5, -1, -1, -1,  3,  3, -2, -5, -5,  3,  3,  4, -2, -2,  1, -4, -3]
-    ])
+    winding_matrix: np.ndarray = None
 
     def __post_init__(self):
         assert self.poles % 2 == 0, f"poles must be an even number, got {self.poles}"
+        if self.winding_matrix is None:
+            if self.poles == 4 and self.slots == 38:
+                self.winding_matrix = np.array([
+                    [ 1,  1,  1, -3, -3,  2,  2,  2, -1, -1,  3,  3,  3, -2, -2,  1,  1,  1, -3, -3,  5,  5,  2, -1, -1,  3,  3,  3, -5, -2,  3,  3,  4, -2, -2,  1, -4,  1],
+                    [ 1,  1,  1, -3, -3,  2,  2,  2, -1, -1,  3,  3,  3, -2, -2,  1,  1,  1, -3, -3,  5,  5,  2, -1, -1,  3,  3,  3, -5, -5,  3,  3,  4, -2, -2,  1, -4,  1],
+                    [ 1,  1, -3, -3, -3,  2,  2, -1, -1, -1,  3,  3, -2, -2, -2,  1,  1, -3, -3, -3,  5,  5, -1, -1, -1,  3,  3, -2, -5, -5,  3,  3,  4, -2, -2,  1, -4, -3],
+                    [ 1,  1, -3, -3, -3,  2,  2, -1, -1, -1,  3,  3, -2, -2, -2,  1,  1, -3, -3, -3,  5,  5, -1, -1, -1,  3,  3, -2, -5, -5,  3,  3,  4, -2, -2,  1, -4, -3]
+                ])
+            else:
+                self.winding_matrix = np.zeros((self.poles, self.slots), dtype=int)
+
+    def resize_matrix(self):
+        """Resizes winding_matrix to match (poles, slots), padding with zeros or truncating."""
+        old_poles, old_slots = self.winding_matrix.shape
+        new_matrix = np.zeros((self.poles, self.slots), dtype=int)
+        
+        copy_poles = min(self.poles, old_poles)
+        copy_slots = min(self.slots, old_slots)
+        
+        new_matrix[:copy_poles, :copy_slots] = self.winding_matrix[:copy_poles, :copy_slots]
+        self.winding_matrix = new_matrix
+
+        # Ensure no winding phase is higher than the available phases
+        self.winding_matrix[np.abs(self.winding_matrix) > self.phases] = 0
 
     @property
     def total_winding_positions(self):

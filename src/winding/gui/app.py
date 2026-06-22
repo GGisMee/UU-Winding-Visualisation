@@ -5,6 +5,7 @@ from .console import ConsolePanel
 from .canvas import CADCanvas
 from .analytics import AnalyticsPanel
 from .theme import Theme
+from ..models.simulation import Geometry, Winding, Material, OperatingState, Generator
 
 
 def load_scale_factor():
@@ -59,6 +60,13 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.grid_rowconfigure(1, weight=1)  # Core Workspace panels
         self.grid_columnconfigure(0, weight=1)
 
+        # --- STATE INITIALIZATION ---
+        self.geometry_state = Geometry()
+        self.winding_state = Winding()
+        self.material_state = Material()
+        self.operating_state = OperatingState()
+        self.generator = Generator(self.geometry_state, self.winding_state, self.material_state, self.operating_state)
+
         # --- WIDGET CREATION ---
         self.create_header()
 
@@ -74,13 +82,13 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.paned_window.grid(row=1, column=0, sticky="nsew", padx=5, pady=(5, 10))
 
         # Instantiate modular panel frames
-        self.console = ConsolePanel(self.paned_window)
+        self.console = ConsolePanel(self.paned_window, app=self)
         self.paned_window.add(self.console, minsize=380, stretch="never")
 
-        self.cad_canvas = CADCanvas(self.paned_window)
+        self.cad_canvas = CADCanvas(self.paned_window, app=self)
         self.paned_window.add(self.cad_canvas, minsize=400, stretch="always")
 
-        self.analytics = AnalyticsPanel(self.paned_window)
+        self.analytics = AnalyticsPanel(self.paned_window, app=self)
         self.paned_window.add(self.analytics, minsize=420, stretch="never")
 
     def create_header(self):
