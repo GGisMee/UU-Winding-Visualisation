@@ -1,10 +1,11 @@
 [project]
 name = "uu-winding"
 version = "0.1.0"
-description = "Add your description here"
+description = "generator winding visualiser"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "customtkinter>=5.2.2",
     "matplotlib>=3.11.0",
     "numpy>=2.4.6",
 ]
