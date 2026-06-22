@@ -35,7 +35,7 @@ def load_scale_factor():
 
 class UnifiedSimulatorApp(ctk.CTk):
     def __init__(self):
-        super().__init__()
+        super().__init__(className="main")
 
         # --- SCALING & LOOK SETUP ---
         self.scale_factor = load_scale_factor()

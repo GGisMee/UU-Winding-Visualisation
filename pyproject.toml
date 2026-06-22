@@ -1,5 +1,5 @@
 [project]
-name = "uu-winding"
+name = "winding"
 version = "0.1.0"
 description = "generator winding visualiser"
 readme = "README.md"
@@ -10,9 +10,16 @@ dependencies = [
     "numpy>=2.4.6",
 ]
 
+[project.scripts]
+winding = "winding.main:main"
+
+[tool.uv]
+package = true
+
 [tool.pyright]
 extraPaths = ["src", "tests"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
