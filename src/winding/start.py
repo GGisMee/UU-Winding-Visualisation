@@ -115,82 +115,102 @@ class Generator:
 
 
 
-def count_windings_per_phase(phases:int, winding_matrix:np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def get_total_windings_per_phase(phases: int, winding_matrix: np.ndarray) -> np.ndarray:
     """
-    Calculates number of up and down windings for each phase.
-
-    Parameters
-    ----------
-    phases : int
-        Number of phases.
-    winding_matrix : np.ndarray
-        Matrix of windings encoded with + for up, - for down.
-        1 or -1 means it belongs to phase 1.
-
-    Returns
-    -------
-    up_windings : np.ndarray
-        Number of up-windings for each phase. Index 0 is phase 1.
-    down_windings : np.ndarray
-        Number of down-windings for each phase. Index 0 is phase 1.
+    Calculates the total number of windings (up + down) for each phase.
     """
-    phases_arr= np.arange(1,phases+1) # [1,...,phases]
+    phases_arr = np.arange(1, phases + 1)
     
-    up_windings= np.sum(winding_matrix.ravel()[:, None] == phases_arr, axis=0)
+    up_windings = np.sum(winding_matrix.ravel()[:, None] == phases_arr, axis=0)
     down_windings = np.sum(winding_matrix.ravel()[:, None] == -phases_arr, axis=0)
-    up_down_windings = up_windings+down_windings
-    return up_windings, down_windings,up_down_windings
+    return up_windings + down_windings
 
-def count_phases_for_slots(poles: float, winding_matrix:np.ndarray):
-    poles_arr = np.arange(1, poles+1) # vector, [1,..., poles]
+def get_net_windings_per_slot(phases: int, winding_matrix: np.ndarray) -> np.ndarray:
+    """
+    Calculates the net windings (up - down) for each phase in each slot.
+    Returns a matrix of shape (phases, slots).
+    """
+    phases_arr = np.arange(1, phases + 1)
 
     # Matrix shape: (poles, slots)
-    # each row shows number of windings for corresponding phase in each slot
-    nb_in_slot_of_phase_up = (np.sum(winding_matrix[:,:,None] == poles_arr[None,None,:], axis = 0).T)
-    nb_in_slot_of_phase_down = (np.sum(winding_matrix[:,:,None] == -poles_arr[None,None,:], axis = 0).T)
+    # We want to count the number of up/down windings per phase for each slot
+    nb_up = np.sum(winding_matrix[:, :, None] == phases_arr[None, None, :], axis=0).T
+    nb_down = np.sum(winding_matrix[:, :, None] == -phases_arr[None, None, :], axis=0).T
 
-    phase_count_for_slots = nb_in_slot_of_phase_up-nb_in_slot_of_phase_down
-    return phase_count_for_slots
+    net_windings = nb_up - nb_down
+    return net_windings
 
-def magnet(arg):
-    # np.sign är ekvivalent med VBA:s Sgn()
+def magnet(arg: np.ndarray) -> np.ndarray:
+    """Evaluates the magnetic field pattern"""
     return (np.sign(np.sin(arg)) * (np.sin(arg) ** 2) + 0.228 * np.sin(3 * arg)) / 0.7724
 
-def phases_at_angles(generator:Generator, phase_count_for_slots:np.ndarray):
-    N = 100
-    Ts = np.linspace(0,0.2, 100) # [s] Timestamps
-    beta_T = Ts*generator.electrical_angular_velocity # [-]
-    windings_per_phase = count_windings_per_phase(generator.wind.phases, generator.wind.winding_matrix)[-1]
-    noise_offset = windings_per_phase*generator.conductor_U*generator.state.noise
-    # Z5 = U_pos
-    # BB15 = angles
-    # BC13 = fas brusad
-    phase_curve = np.zeros(N)
-    for i,beta in enumerate(beta_T):
-        magnet_results = magnet(beta+generator.electric_angles)
-        print(generator.conductor_U)
-        print(beta, phase_count_for_slots)
-        phase_curve[i] = magnet_results@phase_count_for_slots*generator.conductor_U+ (np.random.rand() * noise_offset[0])
-    plt.plot(Ts, phase_curve)
+def simulate_generator(generator: Generator, time_steps: np.ndarray) -> np.ndarray:
+    """
+    Simulates the generator voltages over time.
+    Returns a 2D array of voltages with shape (phases, len(time_steps)).
+    """
+    net_windings_per_slot = get_net_windings_per_slot(generator.wind.phases, generator.wind.winding_matrix)
+    total_windings_per_phase = get_total_windings_per_phase(generator.wind.phases, generator.wind.winding_matrix)
+    
+    num_phases = generator.wind.phases
+    num_steps = len(time_steps)
+    phase_voltages = np.zeros((num_phases, num_steps))
+    
+    # 1. Calculate relative angles for time steps and slots
+    # rotor_electrical_angles has shape (Time,)
+    # generator.electric_angles has shape (Slots,)
+    rotor_electrical_angles = time_steps * generator.electrical_angular_velocity
+    
+    # Broadcasting: create a (Time, Slots) matrix of relative angles
+    relative_angles = rotor_electrical_angles[:, np.newaxis] + generator.electric_angles[np.newaxis, :]
+    
+    # 2. Evaluate magnetic field. Output shape: (Time, Slots)
+    magnet_field_at_slots = magnet(relative_angles)
+    
+    # 3. Calculate voltages for each phase
+    for phase_idx in range(num_phases):
+        net_windings_in_phase = net_windings_per_slot[phase_idx, :]
+        windings_in_this_phase = total_windings_per_phase[phase_idx]
+        noise_amplitude = windings_in_this_phase * generator.conductor_U * generator.state.noise
+        
+        # Get volate: (Time, Slots) @ (Slots,) -> (Time,)
+        induced_voltage = (magnet_field_at_slots @ net_windings_in_phase) * generator.conductor_U
+        
+        # Add a vector of strictly positive uniform noise (uncentered)
+        noise = np.random.rand(num_steps) * noise_amplitude
+        
+        phase_voltages[phase_idx, :] = induced_voltage + noise
+            
+    return phase_voltages
 
-
-
-
+def plot_results(time_steps: np.ndarray, phase_voltages: np.ndarray):
+    """Plots the simulated voltages."""
+    plt.figure(figsize=(10, 6))
+    plt.title("Phase Voltages Over Time")
+    plt.xlabel("Time [s]")
+    plt.ylabel("Voltage [V]")
+    
+    for phase_idx in range(phase_voltages.shape[0]):
+        plt.plot(time_steps, phase_voltages[phase_idx, :], label=f"Phase {phase_idx + 1}")
+        
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
 def calculate():
+    # 1. Setup 
     geometry = Geometry()
     winding = Winding()
     state = OperatingState()
     material = Material()
-    generator = Generator(geometry, winding,material, state)
-    poles = winding.poles
-    slots = winding.slots
+    generator = Generator(geometry, winding, material, state)
 
-    phase_count_for_slots = count_phases_for_slots(poles,winding.winding_matrix)
-    #! phase_count_for_slots should have 5 phases
-    for i in np.arange(generator.wind.phases):
-        phases_at_angles(generator, phase_count_for_slots[i,:])
+    # 2. Simulate
+    time_steps = np.linspace(0, 0.2, 100) # [s]
+    phase_voltages = simulate_generator(generator, time_steps)
     
-    plt.show()
+    # 3. Visualize
+    plot_results(time_steps, phase_voltages)
 
-calculate()
+if __name__ == "__main__":
+    calculate()
