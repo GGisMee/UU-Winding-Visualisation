@@ -31,7 +31,7 @@ class Winding:
     def __post_init__(self):
         assert self.poles % 2 == 0, f"poles must be an even number, got {self.poles}"
         if self.winding_matrix is None:
-            if self.poles == 4 and self.slots == 38:
+            if self.poles == 4 and self.slots == 38: # Boot up example
                 self.winding_matrix = np.array([
                     [ 1,  1,  1, -3, -3,  2,  2,  2, -1, -1,  3,  3,  3, -2, -2,  1,  1,  1, -3, -3,  5,  5,  2, -1, -1,  3,  3,  3, -5, -2,  3,  3,  4, -2, -2,  1, -4,  1],
                     [ 1,  1,  1, -3, -3,  2,  2,  2, -1, -1,  3,  3,  3, -2, -2,  1,  1,  1, -3, -3,  5,  5,  2, -1, -1,  3,  3,  3, -5, -5,  3,  3,  4, -2, -2,  1, -4,  1],
@@ -132,15 +132,16 @@ class Generator:
 
 
 
-def get_total_windings_per_phase(phases: int, winding_matrix: np.ndarray) -> np.ndarray:
+def get_total_windings_per_phase(phases: int, winding_matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Calculates the total number of windings (up + down) for each phase.
+    Calculates the number of windings (up + down, up, down) for each phase over all slots.
+    Returns a three vector all with shape (phases,)
     """
     phases_arr = np.arange(1, phases + 1)
     
     up_windings = np.sum(winding_matrix.ravel()[:, None] == phases_arr, axis=0)
     down_windings = np.sum(winding_matrix.ravel()[:, None] == -phases_arr, axis=0)
-    return up_windings + down_windings
+    return up_windings+down_windings, up_windings, down_windings, 
 
 def get_net_windings_per_slot(phases: int, winding_matrix: np.ndarray) -> np.ndarray:
     """
@@ -167,7 +168,7 @@ def simulate_generator(generator: Generator, time_steps: np.ndarray) -> np.ndarr
     Returns a 2D array of voltages with shape (phases, len(time_steps)).
     """
     net_windings_per_slot = get_net_windings_per_slot(generator.wind.phases, generator.wind.winding_matrix)
-    total_windings_per_phase = get_total_windings_per_phase(generator.wind.phases, generator.wind.winding_matrix)
+    total_windings_per_phase = get_total_windings_per_phase(generator.wind.phases, generator.wind.winding_matrix)[0]
     
     num_phases = generator.wind.phases
     num_steps = len(time_steps)
@@ -187,7 +188,7 @@ def simulate_generator(generator: Generator, time_steps: np.ndarray) -> np.ndarr
     # 3. Calculate voltages for each phase
     for phase_idx in range(num_phases):
         net_windings_in_phase = net_windings_per_slot[phase_idx, :]
-        windings_in_this_phase = total_windings_per_phase[phase_idx]
+        windings_in_this_phase = total_windings_per_phase[phase_idx] # Over all slots
         noise_amplitude = windings_in_this_phase * generator.conductor_U * generator.state.noise
         
         # Get volate: (Time, Slots) @ (Slots,) -> (Time,)

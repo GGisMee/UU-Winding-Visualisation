@@ -4,6 +4,7 @@ matplotlib.use("TkAgg")
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from .theme import Theme
+from ..models.simulation import get_total_windings_per_phase
 
 class AnalyticsPanel(ctk.CTkFrame):
     def __init__(self, parent, app=None):
@@ -62,6 +63,9 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.ax.set_title("Phase Voltages Over Time", color=text_color)
         self.ax.set_xlabel("Time [s]")
         self.ax.set_ylabel("Voltage [V]")
+
+        self.table_frame = ctk.CTkFrame(self.tabs.tab("Overview"), fg_color="transparent")
+        self.table_frame.pack(side=ctk.BOTTOM, fill=ctk.X, padx=10, pady=10)
 
         self.canvas = FigureCanvasTkAgg(self.figure, master=self.tabs.tab("Overview"))
         self.canvas.draw()
@@ -145,6 +149,10 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.ax.axis('off')
         self.canvas.draw()
 
+        for widget in self.table_frame.winfo_children():
+            widget.destroy()
+        lbl = ctk.CTkLabel(self.table_frame, text="Simulation out of date. Table will appear here.", text_color=Theme.TEXT_MUTED.value)
+        lbl.pack(pady=10)
 
     def draw_simulation_results(self, time_steps, phase_voltages):
         self.show_warning_banner(False)
@@ -178,3 +186,36 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.ax.grid(True, linestyle='--', alpha=0.6, color=border_color)
         
         self.canvas.draw()
+        self.update_windings_table()
+
+    def update_windings_table(self):
+        for widget in self.table_frame.winfo_children():
+            widget.destroy()
+            
+        if not self.app or not getattr(self.app, 'generator', None):
+            return
+            
+        from .components import DataTable
+        generator = self.app.generator
+        total, up, down = get_total_windings_per_phase(generator.wind.phases, generator.wind.winding_matrix)
+
+        headers = ["Phase", "Total Windings", "Up", "Down"]
+        table = DataTable(self.table_frame, headers=headers)
+        table.pack(fill=ctk.X, expand=True, pady=5)
+        
+        phase_colors = ["#EF4444", "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316", "#84CC16", "#6366F1"]
+        
+        for phase_idx in range(generator.wind.phases):
+            row = phase_idx + 1
+            p_color = phase_colors[phase_idx % len(phase_colors)]
+            
+            table.add_row(
+                row_data=[f"Phase {row}", total[phase_idx], up[phase_idx], down[phase_idx]],
+                text_colors=[p_color, None, None, None]
+            )
+
+        table.add_row(
+            row_data=["Total", total.sum(), up.sum(), down.sum()],
+            text_colors=[None, None, None, None],
+            is_summary=True
+        )

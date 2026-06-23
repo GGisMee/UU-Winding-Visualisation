@@ -117,3 +117,54 @@ class TextInfoBox(ctk.CTkFrame):
         self.textbox.delete("1.0", "end")
         self.textbox.insert("1.0", text)
         self.textbox.configure(state="disabled")
+
+class DataTable(ctk.CTkFrame):
+    """
+    A reusable table component with styled headers, alternating row colors,
+    and optional summary rows.
+    """
+    def __init__(self, parent, headers: list[str], **kwargs):
+        super().__init__(
+            parent,
+            fg_color=Theme.BG_SURFACE.value,
+            border_width=1,
+            border_color=Theme.BORDER.value,
+            corner_radius=4,
+            **kwargs
+        )
+        self.headers = headers
+        self.grid_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.grid_frame.pack(fill="both", expand=True, padx=2, pady=2)
+        
+        self.num_cols = len(headers)
+        for col in range(self.num_cols):
+            self.grid_frame.grid_columnconfigure(col, weight=1)
+            
+        self.draw_headers()
+        self.row_count = 1  # 0 is headers
+        
+    def draw_headers(self):
+        for col, text in enumerate(self.headers):
+            lbl = ctk.CTkLabel(self.grid_frame, text=text, font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value, fg_color=Theme.BOX_BG.value, corner_radius=0)
+            lbl.grid(row=0, column=col, sticky="nsew", pady=(0, 1), ipadx=5, ipady=4)
+
+    def add_row(self, row_data: list, text_colors: list = None, is_summary: bool = False):
+        bg_color = Theme.BOX_BG.value if is_summary else (Theme.BG_SURFACE.value if self.row_count % 2 != 0 else Theme.BG_INPUT.value)
+        font = Theme.fonts.BODY_BOLD if is_summary else Theme.fonts.BODY
+        
+        pady = (1, 0) if is_summary else 0
+        
+        for col, text in enumerate(row_data):
+            color = text_colors[col] if text_colors and col < len(text_colors) and text_colors[col] else Theme.TEXT_MAIN.value
+            lbl = ctk.CTkLabel(self.grid_frame, text=str(text), font=font if col > 0 else Theme.fonts.BODY_BOLD, text_color=color, fg_color=bg_color, corner_radius=0)
+            lbl.grid(row=self.row_count, column=col, sticky="nsew", pady=pady, ipadx=5, ipady=4 if is_summary else 2)
+            
+        self.row_count += 1
+        
+    def clear_rows(self):
+        # Keep headers (row=0), destroy everything else
+        for widget in self.grid_frame.winfo_children():
+            info = widget.grid_info()
+            if int(info.get("row", 0)) > 0:
+                widget.destroy()
+        self.row_count = 1
