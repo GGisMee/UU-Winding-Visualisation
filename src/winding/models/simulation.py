@@ -30,6 +30,7 @@ class Winding:
     winding_matrix: np.ndarray = None # type: ignore
 
     def __post_init__(self):
+        """Validates pole count and initializes the winding matrix if not provided."""
         assert self.poles % 2 == 0, f"poles must be an even number, got {self.poles}"
         if self.winding_matrix is None:
             if self.poles == 4 and self.slots == 38: # Boot up example
@@ -69,7 +70,7 @@ class Material:
 
 @dataclass
 class OperatingState:
-    """Aktuellt driftläge."""
+    """Current operating state of the generator."""
     RPM: int = 240  # [rpm]
     noise: float = 0.03  # [-] noise parameter
 
@@ -78,6 +79,10 @@ class OperatingState:
 
 @dataclass
 class Generator:
+    """
+    Represents the full generator assembly and state.
+    Provides calculated properties for physical, mechanical, and electrical characteristics.
+    """
     geom:Geometry
     wind:Winding
     material: Material
@@ -86,48 +91,59 @@ class Generator:
     # -- 1. Geometri & Mekanik --
     @property
     def v_airgap(self) -> float:
+        """Calculates the linear velocity in the airgap based on rotor RPM and diameter."""
         return 2 * np.pi * self.geom.inner_diameter * self.state.RPM / 60  # [m/s]
 
     # -- 2. Spår & Lindningar --
     @property
     def pole_pairs(self) -> int:
+        """Returns the number of magnetic pole pairs."""
         return self.wind.poles // 2  # [-]
 
     @property
     def q(self) -> float:
+        """Calculates the number of slots per pole and phase."""
         return self.wind.slots / (self.wind.poles * self.wind.phases)  # [-] 
 
     @property
     def angle_per_slot(self) -> float:
+        """Calculates the electrical angle displacement between adjacent slots."""
         return (self.pole_pairs / self.wind.slots) * 2 * np.pi  # [-]
 
     @property
     def electric_angles(self) -> np.ndarray:
+        """Calculates the electrical angle position for each slot."""
         return (np.arange(1, self.wind.slots + 1) * self.angle_per_slot) % (2 * np.pi)  # [-]
 
     # -- 3. Elektricitet & Magnetism --
     @property
     def frequency(self) -> float:
+        """Calculates the electrical frequency at the current operating RPM."""
         return self.wind.poles * self.state.RPM / 60  # [Hz] Electrical Frequency at operating speed
 
     @property
     def electrical_angular_velocity(self) -> float:
+        """Calculates the electrical angular velocity in radians per second."""
         return (self.state.RPM / 60) * 2 * np.pi * self.pole_pairs  # [s^-1] rad / sec
 
     @property
     def average_airgap_b_field(self) -> float:
+        """Calculates the average magnetic flux density in the airgap."""
         return (self.material.remanence / 0.8) * self.wind.rotor_fill  # [T] Average Airgap Magnetic Flux Density
 
     @property
     def induced_e_field(self) -> float:
+        """Calculates the induced electric field strength in the airgap."""
         return self.average_airgap_b_field * self.v_airgap  # [V/m]
 
     @property
     def conductor_U(self) -> float:
+        """Calculates the induced voltage per conductor."""
         return self.induced_e_field * self.geom.height  # [V]
 
     @property
     def nominal_max_voltage(self) -> float:
+        """Calculates the nominal maximum phase voltage."""
         return self.conductor_U*self.wind.total_winding_positions/self.wind.phases
 
 
@@ -213,13 +229,18 @@ def plot_phase_voltages(time_steps: np.ndarray, phase_voltages: np.ndarray):
         plt.plot(time_steps, phase_voltages[phase_idx, :], label=f"Phase {phase_idx + 1}")
 
     # Plot sum
-    plt.plot(time_steps, np.sum(phase_voltages, axis=1), label="Sum of phase voltages")
+    plt.plot(time_steps, np.sum(phase_voltages, axis=0), "--", label="Sum of phase voltages", color="Black")
         
     plt.legend()
     plt.grid(True)
     plt.show()
 
 def calculate():
+    """
+    Main execution routine for the generator simulation.
+    Sets up the machine parameters, runs the simulation over a defined time period,
+    and visualizes the phase voltages.
+    """
     # 1. Setup 
     geometry = Geometry()
     winding = Winding()
