@@ -91,6 +91,8 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.analytics = AnalyticsPanel(self.paned_window, app=self)
         self.paned_window.add(self.analytics, minsize=420, stretch="never")
 
+        self.on_inputs_changed()
+
     def create_header(self):
         # Header main container
         self.header_frame = ctk.CTkFrame(
@@ -207,5 +209,28 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.paned_window.configure(bg=Theme.BG_MAIN.value[mode_idx])
         self.cad_canvas.update_geometry()
         self.console.update_from_models()
-        self.analytics.draw_performance_curves()
-        self.analytics.redraw_capex_bar()
+
+    def on_inputs_changed(self):
+        self.analytics.show_warning_banner(True)
+        self.analytics.clear_charts()
+
+    def run_simulation(self):
+        # Disable controls during simulation
+        self.console.set_inputs_enabled(False)
+        self.analytics.show_loading(True, "Initializing generator geometry...")
+
+        # Step-by-step loading progress animation
+        self.after(500, lambda: self.analytics.set_loading_status("Solving magnetic circuit equations..."))
+        self.after(1200, lambda: self.analytics.set_loading_status("Calculating induced phase voltages..."))
+        self.after(2000, self.complete_simulation)
+
+    def complete_simulation(self):
+        self.console.set_inputs_enabled(True)
+        
+        import numpy as np
+        from ..models.simulation import simulate_generator
+        # Or just simulate a fixed 0.2 seconds like the original code
+        time_steps = np.linspace(0, 0.2, 200)
+        
+        phase_voltages = simulate_generator(self.generator, time_steps)
+        self.analytics.draw_simulation_results(time_steps, phase_voltages)

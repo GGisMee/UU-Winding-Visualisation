@@ -87,7 +87,7 @@ class ConsolePanel(ctk.CTkFrame):
             fg_color=Theme.BUTTON_BG.value,
             hover_color=Theme.BUTTON_HOVER.value,
             text_color=Theme.TEXT_MAIN.value,
-            command=self.on_simulate
+            command=self.app.run_simulation if self.app else None
         )
         self.btn_simulate.pack(fill="x", pady=(20, 0))
 
@@ -96,35 +96,30 @@ class ConsolePanel(ctk.CTkFrame):
             self.app.winding_state.phases = int(val)
             self.app.winding_state.resize_matrix()
             self.app.cad_canvas.update_geometry()
+            if hasattr(self.app, 'on_inputs_changed'):
+                self.app.on_inputs_changed()
 
     def on_change_poles(self, val):
         if self.app:
             self.app.winding_state.poles = int(val)
             self.app.winding_state.resize_matrix()
             self.app.cad_canvas.update_geometry()
+            if hasattr(self.app, 'on_inputs_changed'):
+                self.app.on_inputs_changed()
 
     def on_change_slots(self, val):
         if self.app:
             self.app.winding_state.slots = int(val)
             self.app.winding_state.resize_matrix()
             self.app.cad_canvas.update_geometry()
+            if hasattr(self.app, 'on_inputs_changed'):
+                self.app.on_inputs_changed()
 
     def on_change_rpm(self, val):
         if self.app:
             self.app.operating_state.RPM = int(val)
-
-    def on_simulate(self):
-        if self.app:
-            import numpy as np
-            from ..models.simulation import simulate_generator
-            # Generate time steps for one full mechanical rotation at the given RPM
-            # time_for_one_rot = 60.0 / max(1, self.app.operating_state.RPM)
-            # time_steps = np.linspace(0, time_for_one_rot, 500)
-            # Or just simulate a fixed 0.2 seconds like the original code
-            time_steps = np.linspace(0, 0.2, 200)
-            
-            phase_voltages = simulate_generator(self.app.generator, time_steps)
-            self.app.analytics.draw_simulation_results(time_steps, phase_voltages)
+            if hasattr(self.app, 'on_inputs_changed'):
+                self.app.on_inputs_changed()
 
     def set_inputs_enabled(self, enabled: bool):
         state = "normal" if enabled else "disabled"

@@ -67,7 +67,88 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=ctk.TOP, fill=ctk.BOTH, expand=True)
 
+        # ==========================================
+        # WARNING BANNER & LOADING OVERLAY
+        # ==========================================
+        # Warning Banner (shown when inputs change, prompting rerun)
+        self.warning_banner = ctk.CTkFrame(self, fg_color=Theme.ALERT_BG.value, height=32, corner_radius=0)
+        self.lbl_warning = ctk.CTkLabel(
+            self.warning_banner, 
+            text="⚠️ Inputs changed. Click 'Simulate' to recalculate results.",
+            font=Theme.fonts.BODY_BOLD,
+            text_color=Theme.ALERT.value
+        )
+        self.lbl_warning.pack(pady=4)
+
+        # Loading Overlay (covers entire panel during simulation run)
+        self.loading_overlay = ctk.CTkFrame(self, fg_color=Theme.BG_SURFACE.value, corner_radius=0)
+        self.loading_container = ctk.CTkFrame(self.loading_overlay, fg_color=Theme.BG_SURFACE.value)
+        self.loading_container.place(relx=0.5, rely=0.45, anchor="center")
+
+        lbl = ctk.CTkLabel(
+            self.loading_container, 
+            text="SIMULATION RUNNING", 
+            font=Theme.fonts.SUBTITLE, 
+            text_color=Theme.ACCENT.value
+        )
+        lbl.pack(pady=5)
+        
+        self.lbl_loading_status = ctk.CTkLabel(
+            self.loading_container, 
+            text="Initializing generator model...", 
+            font=Theme.fonts.BODY, 
+            text_color=Theme.TEXT_MAIN.value
+        )
+        self.lbl_loading_status.pack(pady=(0, 15))
+
+        self.loading_progress = ctk.CTkProgressBar(
+            self.loading_container, 
+            width=280, 
+            progress_color=Theme.ACCENT.value, 
+            fg_color=Theme.BG_MAIN.value
+        )
+        self.loading_progress.pack()
+
+        # Initial clean view
+        self.clear_charts()
+        self.show_warning_banner(False)
+
+    def show_warning_banner(self, show: bool):
+        if show:
+            self.warning_banner.place(relx=0, rely=0.92, relwidth=1, relheight=0.08)
+        else:
+            self.warning_banner.place_forget()
+
+    def show_loading(self, show: bool, message: str = ""):
+        if show:
+            self.loading_overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
+            self.loading_progress.start()
+            if message:
+                self.lbl_loading_status.configure(text=message)
+        else:
+            self.loading_progress.stop()
+            self.loading_overlay.place_forget()
+
+    def set_loading_status(self, text: str):
+        self.lbl_loading_status.configure(text=text)
+
+    def clear_charts(self):
+        self.ax.clear()
+        mode_idx = 0 if ctk.get_appearance_mode() == "Light" else 1
+        bg_color = Theme.BG_SURFACE.value[mode_idx]
+        muted_color = Theme.TEXT_MUTED.value[mode_idx]
+
+        self.figure.patch.set_facecolor(bg_color)
+        self.ax.set_facecolor(bg_color)
+        self.ax.text(0.5, 0.5, "[ Simulation Out of Date ]\nClick 'Simulate' to plot curves.",
+                ha='center', va='center', color=muted_color, fontweight='bold', fontsize=12)
+        self.ax.axis('off')
+        self.canvas.draw()
+
+
     def draw_simulation_results(self, time_steps, phase_voltages):
+        self.show_warning_banner(False)
+        self.show_loading(False)
         self.ax.clear()
 
         mode_idx = 0 if ctk.get_appearance_mode() == "Light" else 1
@@ -97,9 +178,3 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.ax.grid(True, linestyle='--', alpha=0.6, color=border_color)
         
         self.canvas.draw()
-
-    def draw_performance_curves(self):
-        pass
-
-    def redraw_capex_bar(self):
-        pass
