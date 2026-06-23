@@ -1,4 +1,5 @@
 import customtkinter as ctk
+import numpy as np
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.figure import Figure
@@ -181,7 +182,9 @@ class AnalyticsPanel(ctk.CTkFrame):
         for phase_idx in range(phase_voltages.shape[0]):
             color = phase_colors[phase_idx % len(phase_colors)]
             self.ax.plot(time_steps, phase_voltages[phase_idx, :], label=f"Phase {phase_idx + 1}", color=color)
-            
+
+        self.ax.plot(time_steps, np.sum(phase_voltages, axis=0), label="Sum of phase voltages", color="Black")
+
         self.ax.legend(facecolor=bg_color, edgecolor=border_color, labelcolor=text_color, loc='upper right')
         self.ax.grid(True, linestyle='--', alpha=0.6, color=border_color)
         

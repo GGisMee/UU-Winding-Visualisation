@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 
 import numpy as np
 
@@ -26,7 +27,7 @@ class Winding:
     stator_fill: float = 0.5  # [-] stator factor filled by copper
     rotor_fill: float = 0.5  # [-] fraction of rotor filled by permanent magnet
 
-    winding_matrix: np.ndarray = None
+    winding_matrix: np.ndarray = None # type: ignore
 
     def __post_init__(self):
         assert self.poles % 2 == 0, f"poles must be an even number, got {self.poles}"
@@ -201,7 +202,7 @@ def simulate_generator(generator: Generator, time_steps: np.ndarray) -> np.ndarr
             
     return phase_voltages
 
-def plot_results(time_steps: np.ndarray, phase_voltages: np.ndarray):
+def plot_phase_voltages(time_steps: np.ndarray, phase_voltages: np.ndarray):
     """Plots the simulated voltages."""
     plt.figure(figsize=(10, 6))
     plt.title("Phase Voltages Over Time")
@@ -210,6 +211,9 @@ def plot_results(time_steps: np.ndarray, phase_voltages: np.ndarray):
     
     for phase_idx in range(phase_voltages.shape[0]):
         plt.plot(time_steps, phase_voltages[phase_idx, :], label=f"Phase {phase_idx + 1}")
+
+    # Plot sum
+    plt.plot(time_steps, np.sum(phase_voltages, axis=1), label="Sum of phase voltages")
         
     plt.legend()
     plt.grid(True)
@@ -226,9 +230,10 @@ def calculate():
     # 2. Simulate
     time_steps = np.linspace(0, 0.2, 100) # [s]
     phase_voltages = simulate_generator(generator, time_steps)
+
     
     # 3. Visualize
-    plot_results(time_steps, phase_voltages)
+    plot_phase_voltages(time_steps, phase_voltages)
 
 if __name__ == "__main__":
     calculate()
