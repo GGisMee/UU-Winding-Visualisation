@@ -1,46 +1,85 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# --- 1. Skapa en testsignal (Om du redan har din data Y och fs, hoppa över detta) ---
-fs = 1000  # Samplingsfrekvens (Hz)
-t = np.arange(0, 1.0, 1/fs)  # 1 sekund av data
-f0 = 50    # Grundton (Hz)
+def morph_wave(arg, square_ratio):
+    """
+    Morphs smoothly between a pure sine wave and a squarish wave.
+    
+    Parameters:
+    arg (array): The input angle/argument (rad).
+    square_ratio (float): Value from 0.0 (100% Sine) to 1.0 (Max Square).
+    """
+    # Ensure ratio stays between 0 and 1
+    k = np.clip(square_ratio, 0.0, 1.0)
+    
+    # Base sine wave (1st harmonic)
+    y = np.sin(arg)
+    
+    # Dynamically add higher odd harmonics based on the square_ratio
+    # 20 harmonics is a good sweet spot for a sharp but clean look
+    max_harmonics = 20 
+    
+    for i in range(3, max_harmonics * 2, 2):
+        # Scale down how fast higher harmonics kick in using k
+        weight = k ** (i / 3) 
+        y += (1 / i) * np.sin(i * arg) * weight
+        
+    # Normalize the peak to 1.0 so the volume/amplitude stays constant
 
-# Vi bygger en signal med grundton + 3:e, 5:e och 7:e överton
-Y = (1.0 * np.sin(2 * np.pi * f0 * t) + 
-     0.5 * np.sin(2 * np.pi * 3 * f0 * t) + 
-     0.3 * np.sin(2 * np.pi * 5 * f0 * t) + 
-     0.1 * np.sin(2 * np.pi * 7 * f0 * t))
-# ----------------------------------------------------------------------------------
+    max_val = np.max(np.abs(y))
+    return y / np.maximum(max_val, 1e-12)
 
-# 2. Kör FFT och beräkna skalerad magnitud
-N = len(Y)
-Y_fft = np.fft.fft(Y)
-magnituder = (2.0 / N) * np.abs(Y_fft)
-frekvenser = np.fft.fftfreq(N, d=1/fs)
+X = np.linspace(0,4*np.pi, 100)
 
-# 3. Hämta endast den positiva halvan (FFT är symmetrisk)
-pos_index = frekvenser >= 0
-frekvenser_pos = frekvenser[pos_index]
-magnituder_pos = magnituder[pos_index]
 
-# 4. Definiera övertonernas frekvenser för att rita ut linjer i grafen
-overtoner = [1, 3, 5, 7]
-mål_frekvenser = [n * f0 for n in overtoner]
 
-# 5. Plotta spektrumet
-plt.figure(figsize=(10, 5))
-plt.plot(frekvenser_pos, magnituder_pos, label='FFT Spektrum', color='b', linewidth=1.5)
+def morph_wave_lerp(arg, square_ratio):
+    # 1. Generate the perfect targets
+    sine_wave = np.sin(arg)
+    square_wave = np.sign(sine_wave)
 
-# Rita vertikala linjer där övertonerna *borde* ligga för enkel visuell koll
-for f in mål_frekvenser:
-    plt.axvline(x=f, color='r', linestyle='--', alpha=0.7, label=f'Överton ({f} Hz)' if f == mål_frekvenser[0] else "")
+    # 2. Blend them linearly based on the ratio
+    y = (1 - square_ratio) * sine_wave + square_ratio * square_wave
+    return y
 
-# Zooma in på det intressanta området (upp till strax förbi 7:e övertonen)
-plt.xlim(0, max(mål_frekvenser) * 1.3)
-plt.title('Amplitudspektrum (Hitta övertoner)')
-plt.xlabel('Frekvens (Hz)')
-plt.ylabel('Amplitud')
-plt.grid(True, linestyle=':', alpha=0.6)
-plt.legend()
+import numpy as np
+
+
+def morph_wave_adjustable(arg:np.ndarray, square_ratio:float):
+    k = np.clip(square_ratio, 0.0, 1.0)
+    arg = np.asarray(arg)
+
+    # 1. Strict boundary check for absolute pure sine wave
+    if k == 0.0:
+        return np.sin(arg)
+
+    # 2. Shape the slider response curve
+    # A gamma of 2.5 keeps the steepness low for longer,
+    # making the visual growth of the "squareness" feel perfectly linear.
+    gamma = 2.5
+    k_warped = k**gamma
+
+    # 3. Scale the max steepness (50.0 is incredibly sharp)
+    max_steepness = 50.0
+    steepness = 1.0 + (k_warped * (max_steepness - 1.0))
+
+    # 4. Generate the tanh wave and normalize it
+    y = np.tanh(steepness * np.sin(arg))
+    return y / np.tanh(steepness)
+
+@staticmethod
+def magnet(arg: np.ndarray) -> np.ndarray:
+    return (np.sign(np.sin(arg)) * (np.sin(arg) ** 2) + 0.228 * np.sin(3 * arg)) / 0.7724
+
+
+
+Y = np.linspace(0,1,10)
+f = lambda x: np.mean(morph_wave_adjustable(X,x)-magnet(X))
+plt.plot(Y, [f(y) for y in Y])
+print(np.mean(morph_wave_adjustable(X,0.16)-magnet(X)))
+
+plt.plot(X, morph_wave_adjustable(X, 0.16))
+
+plt.plot(X, magnet(X))
+plt.plot()
 plt.show()
