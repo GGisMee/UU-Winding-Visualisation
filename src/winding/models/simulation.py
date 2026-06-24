@@ -124,7 +124,7 @@ class OperatingState:
         Noise parameter for simulations [-].
     """
     RPM: int = 240
-    noise: float = 0.03
+    noise: float = 0.02
 
 
 # --- Beräkningar ---
@@ -285,6 +285,27 @@ class SimulateGenerator:
         return (np.sign(np.sin(arg)) * (np.sin(arg) ** 2) + 0.228 * np.sin(3 * arg)) / 0.7724
 
     @staticmethod
+    def apply_noise(generator:Generator, phase_voltages: np.ndarray) -> np.ndarray:
+        """
+        Applies noise to the phase voltages.
+        
+        Parameters
+        ----------
+        phase_voltages : np.ndarray of shape (phases, time_steps)
+        noise_amplitudes : np.ndarray of shape (phases,)
+        """
+
+
+        total_windings_per_phase = SimulateGenerator.get_total_windings_per_phase(generator.wind.phases, generator.wind.winding_matrix)[0]
+        noise_amplitudes = total_windings_per_phase * generator.conductor_U * generator.state.noise
+        num_phases, num_steps = phase_voltages.shape
+
+
+        noise = np.random.normal(0.0, 1.0, (num_phases, num_steps)) * noise_amplitudes[:, np.newaxis]
+
+        return phase_voltages + noise
+
+    @staticmethod
     def simulate(generator: Generator, time_steps: np.ndarray) -> np.ndarray:
         """
         Simulates the generator voltages over time.
@@ -302,7 +323,6 @@ class SimulateGenerator:
             A 2D array of phase voltages [V].
         """
         net_windings_per_slot =SimulateGenerator.get_net_windings_per_slot(generator.wind.phases, generator.wind.winding_matrix)
-        total_windings_per_phase = SimulateGenerator.get_total_windings_per_phase(generator.wind.phases, generator.wind.winding_matrix)[0]
         
         num_phases = generator.wind.phases
         num_steps = len(time_steps)
@@ -322,17 +342,12 @@ class SimulateGenerator:
         # 3. Calculate voltages for each phase
         for phase_idx in range(num_phases):
             net_windings_in_phase = net_windings_per_slot[phase_idx, :]
-            windings_in_this_phase = total_windings_per_phase[phase_idx] # Over all slots
-            noise_amplitude = windings_in_this_phase * generator.conductor_U * generator.state.noise
             
             # Get volate: (Time, Slots) @ (Slots,) -> (Time,)
             induced_voltage = (magnet_field_at_slots @ net_windings_in_phase) * generator.conductor_U
             
-            # Add a vector of strictly positive uniform noise (uncentered)
-            noise =  np.random.rand(num_steps) * noise_amplitude
+            phase_voltages[phase_idx, :] = induced_voltage
             
-            phase_voltages[phase_idx, :] = induced_voltage + noise
-                
         return phase_voltages
 
     @staticmethod
@@ -380,25 +395,33 @@ class PostProcess:
         phase_voltages : np.ndarray of shape (phases, len(time_steps))
             Array of phase voltages [V].
         """
-        phase_voltages = phase_voltages[1]
         N = phase_voltages.shape[-1] # number of datapoints
-        voltage_fft = np.fft.fft(phase_voltages)
-        magnitudes = 2/N*np.abs(voltage_fft)
-        frequencies = np.fft.fftfreq(N, d=dt)
-        print(frequencies)
-        print(magnitudes)
+        voltage_fft = np.fft.rfft(phase_voltages)
+        frequencies = np.fft.rfftfreq(N, d=dt)
 
 
-        pos_index =  frequencies>= 0
-        frekvenser_pos = frequencies[pos_index]
-        magnituder_pos = magnitudes[pos_index]
+        magnitudes = np.abs(voltage_fft)/N
+        magnitudes[...,1:] *= 2 # den på 0 är dubbelskalas i början
 
         # 4. Definiera övertonernas frekvenser för att rita ut linjer i grafen
-        goal_frequencies = np.arange(1,8, 2)*fundamental_frequency
+        goal_frequencies = np.arange(1,8,2)*fundamental_frequency
+        goal_idx = [np.argmin(np.abs(frequencies-goal_frequency)) for goal_frequency in goal_frequencies]
 
+        overtone_magnitudes = magnitudes[:, goal_idx]
+        print("Frekvenser: ", frequencies[goal_idx])
+        print("Magnitudes per phase:\n", overtone_magnitudes)
+
+        PostProcess.plot_spectrum(frequencies, magnitudes, goal_frequencies, phases=phase_voltages.shape[0])
+
+        return overtone_magnitudes
+
+
+    @staticmethod
+    def plot_spectrum(frequencies:np.ndarray, magnitudes:np.ndarray, goal_frequencies:np.ndarray, phases:int):
         # 5. Plotta spektrumet
         plt.figure(figsize=(10, 5))
-        plt.plot(frekvenser_pos, magnituder_pos, label='FFT Spektrum', color='b', linewidth=1.5)
+        for phase_idx in range(phases):
+            plt.plot(frequencies, magnitudes[phase_idx, :], label=f'spectrum phase {phase_idx+1}', linewidth=1.5)
 
         # Rita vertikala linjer där övertonerna *borde* ligga för enkel visuell koll
         for f in goal_frequencies:
@@ -414,6 +437,13 @@ class PostProcess:
         plt.show()
 
 
+def create_steps(frequency:float, nb_periods: int, points_per_period: int) -> tuple[float, np.ndarray]:
+    """Returns step distance and steps array"""
+    N = nb_periods*points_per_period
+    period = 1/frequency
+    time_steps = np.linspace(0, nb_periods*period, N, endpoint=False) # [s]
+    dt = time_steps[1] - time_steps[0]
+    return dt, time_steps
 
 def calculate():
     """
@@ -428,15 +458,17 @@ def calculate():
     material = Material()
     generator = Generator(geometry, winding, material, state)
 
+
+
     # 2. Simulate
-    N = 1024
-    time_steps = np.linspace(0, 2, N, endpoint=False) # [s]
-    dt= (2-0)/N
+    dt, time_steps = create_steps(frequency=generator.frequency, nb_periods=1,points_per_period=64)
+
     phase_voltages = SimulateGenerator.simulate(generator, time_steps)
+    noised_phase_voltages = SimulateGenerator.apply_noise(generator, phase_voltages)
 
     
     # 3. Visualize
-    # SimulateGenerator.plot_phase_voltages(time_steps, phase_voltages)
+    SimulateGenerator.plot_phase_voltages(time_steps, noised_phase_voltages)
 
     PostProcess.overtones(dt, generator.frequency, phase_voltages)
 

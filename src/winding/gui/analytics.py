@@ -5,7 +5,7 @@ matplotlib.use("TkAgg")
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from .theme import Theme
-from ..models.simulation import get_total_windings_per_phase
+from ..models.simulation import SimulateGenerator
 
 class AnalyticsPanel(ctk.CTkFrame):
     def __init__(self, parent, app=None):
@@ -200,7 +200,7 @@ class AnalyticsPanel(ctk.CTkFrame):
             
         from .components import DataTable
         generator = self.app.generator
-        total, up, down = get_total_windings_per_phase(generator.wind.phases, generator.wind.winding_matrix)
+        total, up, down = SimulateGenerator.get_total_windings_per_phase(generator.wind.phases, generator.wind.winding_matrix)
 
         headers = ["Phase", "Total Windings", "Up", "Down"]
         table = DataTable(self.table_frame, headers=headers)
