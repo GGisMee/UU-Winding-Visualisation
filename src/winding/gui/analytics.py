@@ -21,6 +21,12 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.grid_propagate(False)
 
         self.app = app
+        
+        self.is_out_of_date = True
+        self.current_time_steps = None
+        self.current_phase_voltages = None
+        self.current_dt = None
+        self.current_fundamental_frequency = None
 
         # Title Label
         self.lbl_title = ctk.CTkLabel(
@@ -51,10 +57,9 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.overtones_frame = ctk.CTkFrame(self.tabs.tab("Overtones"), fg_color="transparent")
         self.overtones_frame.pack(fill=ctk.BOTH, expand=True, padx=10, pady=10)
 
-        mode_idx = 0 if ctk.get_appearance_mode() == "Light" else 1
-        bg_color = Theme.BG_SURFACE.value[mode_idx]
-        text_color = Theme.TEXT_MAIN.value[mode_idx]
-        border_color = Theme.BORDER.value[mode_idx]
+        bg_color = Theme.BG_SURFACE.get_color()
+        text_color = Theme.TEXT_MAIN.get_color()
+        border_color = Theme.BORDER.get_color()
 
         self.figure = Figure(figsize=(5, 4), dpi=100)
         self.figure.patch.set_facecolor(bg_color)
@@ -142,11 +147,18 @@ class AnalyticsPanel(ctk.CTkFrame):
     def set_loading_status(self, text: str):
         self.lbl_loading_status.configure(text=text)
 
+    def update_theme(self):
+        if self.is_out_of_date:
+            self.clear_charts()
+        elif self.current_phase_voltages is not None:
+            self.draw_simulation_results(self.current_time_steps, self.current_phase_voltages)
+            self.draw_overtones_results(self.current_dt, self.current_fundamental_frequency, self.current_phase_voltages)
+
     def clear_charts(self):
+        self.is_out_of_date = True
         self.ax.clear()
-        mode_idx = 0 if ctk.get_appearance_mode() == "Light" else 1
-        bg_color = Theme.BG_SURFACE.value[mode_idx]
-        muted_color = Theme.TEXT_MUTED.value[mode_idx]
+        bg_color = Theme.BG_SURFACE.get_color()
+        muted_color = Theme.TEXT_MUTED.get_color()
 
         self.figure.patch.set_facecolor(bg_color)
         self.ax.set_facecolor(bg_color)
@@ -166,14 +178,17 @@ class AnalyticsPanel(ctk.CTkFrame):
         lbl_ot.pack(pady=10)
 
     def draw_simulation_results(self, time_steps, phase_voltages):
+        self.is_out_of_date = False
+        self.current_time_steps = time_steps
+        self.current_phase_voltages = phase_voltages
+        
         self.show_warning_banner(False)
         self.show_loading(False)
         self.ax.clear()
 
-        mode_idx = 0 if ctk.get_appearance_mode() == "Light" else 1
-        bg_color = Theme.BG_SURFACE.value[mode_idx]
-        text_color = Theme.TEXT_MAIN.value[mode_idx]
-        border_color = Theme.BORDER.value[mode_idx]
+        bg_color = Theme.BG_SURFACE.get_color()
+        text_color = Theme.TEXT_MAIN.get_color()
+        border_color = Theme.BORDER.get_color()
 
         self.figure.patch.set_facecolor(bg_color)
         self.ax.set_facecolor(bg_color)
@@ -187,7 +202,8 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.ax.set_xlabel("Time [s]")
         self.ax.set_ylabel("Voltage [V]")
 
-        phase_colors = ["#EF4444", "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316", "#84CC16", "#6366F1"]
+        phase_colors = Theme.PHASE_COLORS.value
+
 
         for phase_idx in range(phase_voltages.shape[0]):
             color = phase_colors[phase_idx % len(phase_colors)]
@@ -216,7 +232,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         table = DataTable(self.table_frame, headers=headers)
         table.pack(fill=ctk.X, expand=True, pady=5)
         
-        phase_colors = ["#EF4444", "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316", "#84CC16", "#6366F1"]
+        phase_colors = Theme.PHASE_COLORS.value
         
         for phase_idx in range(generator.wind.phases):
             row = phase_idx + 1
@@ -234,18 +250,13 @@ class AnalyticsPanel(ctk.CTkFrame):
         )
 
     def draw_overtones_results(self, dt, fundamental_frequency, phase_voltages):
+        self.current_dt = dt
+        self.current_fundamental_frequency = fundamental_frequency
+        
         for widget in self.overtones_frame.winfo_children():
             widget.destroy()
             
-        N = phase_voltages.shape[-1]
-        voltage_fft = np.fft.rfft(phase_voltages)
-        frequencies = np.fft.rfftfreq(N, d=dt)
-        magnitudes = np.abs(voltage_fft) / N
-        magnitudes[..., 1:] *= 2
-
-        goal_frequencies = np.arange(1, 8, 2) * fundamental_frequency
-        goal_idx = [np.argmin(np.abs(frequencies - gf)) for gf in goal_frequencies]
-        overtone_magnitudes = magnitudes[:, goal_idx]
+        overtone_magnitudes = PostProcess.harmonics(dt, fundamental_frequency, phase_voltages)
         
         thd_values = PostProcess.THD(overtone_magnitudes)
 
@@ -255,7 +266,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         table = DataTable(self.overtones_frame, headers=headers)
         table.pack(fill=ctk.X, expand=True, pady=5)
         
-        phase_colors = ["#EF4444", "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316", "#84CC16", "#6366F1"]
+        phase_colors =Theme.PHASE_COLORS.value
         
         for phase_idx in range(phase_voltages.shape[0]):
             row = phase_idx + 1

@@ -6,33 +6,9 @@ from .console import ConsolePanel
 from .canvas import CADCanvas
 from .analytics import AnalyticsPanel
 from .theme import Theme
-from ..models.simulation import Geometry, Winding, Material, OperatingState, Generator, SimulateGenerator, create_steps
+from ..models.simulation import Geometry, Winding,Magnet, OperatingState, Generator, SimulateGenerator, create_steps
+from ..config import WINDOW_SCALING, NB_PERIODS
 
-
-def load_scale_factor():
-    try:
-        dir_path = os.path.dirname(os.path.abspath(__file__))
-        scale_path = os.path.join(dir_path, "scale.txt")
-        if os.path.exists(scale_path):
-            with open(scale_path, "r") as f:
-                return float(f.read().strip())
-    except Exception:
-        pass
-        
-    import platform
-    if platform.system() == "Linux":
-        try:
-            import tkinter as tk
-            temp_root = tk.Tk()
-            temp_root.withdraw()
-            dpi = temp_root.winfo_fpixels('1i')
-            temp_root.destroy()
-            scale = dpi / 96.0
-            return max(1.0, min(scale, 3.0))
-        except Exception:
-            pass
-
-    return 1.0
 
 
 class UnifiedSimulatorApp(ctk.CTk):
@@ -40,7 +16,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         super().__init__(className="main")
 
         # --- SCALING & LOOK SETUP ---
-        self.scale_factor = load_scale_factor()
+        self.scale_factor = WINDOW_SCALING
         ctk.set_widget_scaling(self.scale_factor)
         ctk.set_window_scaling(self.scale_factor)
         
@@ -64,9 +40,9 @@ class UnifiedSimulatorApp(ctk.CTk):
         # --- STATE INITIALIZATION ---
         self.geometry_state = Geometry()
         self.winding_state = Winding()
-        self.material_state = Material()
+        self.magnet= Magnet()
         self.operating_state = OperatingState()
-        self.generator = Generator(self.geometry_state, self.winding_state, self.material_state, self.operating_state)
+        self.generator = Generator(self.geometry_state, self.winding_state, self.magnet, self.operating_state)
 
         # --- WIDGET CREATION ---
         self.create_header()
@@ -77,7 +53,7 @@ class UnifiedSimulatorApp(ctk.CTk):
             orient=tk.HORIZONTAL, 
             sashwidth=6,
             sashrelief=tk.FLAT,
-            bg=Theme.BG_MAIN.value[mode_idx],
+            bg=Theme.BG_MAIN.get_color(),
             bd=0
         )
         self.paned_window.grid(row=1, column=0, sticky="nsew", padx=5, pady=(5, 10))
@@ -181,7 +157,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.apply_scale(new_scale)
         
     def reset_scale(self):
-        self.apply_scale(load_scale_factor())
+        self.apply_scale(WINDOW_SCALING)
 
     def on_mousewheel_scale(self, event):
         if event.delta > 0:
@@ -206,10 +182,10 @@ class UnifiedSimulatorApp(ctk.CTk):
 
     def update_theme_drawings(self):
         self.configure(fg_color=Theme.BG_MAIN.value)
-        mode_idx = 0 if ctk.get_appearance_mode() == "Light" else 1
-        self.paned_window.configure(bg=Theme.BG_MAIN.value[mode_idx])
+        self.paned_window.configure(bg=Theme.BG_MAIN.get_color())
         self.cad_canvas.update_geometry()
         self.console.update_from_models()
+        self.analytics.update_theme()
 
     def on_inputs_changed(self):
         self.analytics.show_warning_banner(True)
@@ -228,10 +204,10 @@ class UnifiedSimulatorApp(ctk.CTk):
     def complete_simulation(self):
         self.console.set_inputs_enabled(True)
         
-        dt, time_steps = create_steps(frequency=self.generator.frequency, nb_periods=4, points_per_period=64)
+        dt, time_steps = create_steps(frequency=self.generator.frequency, nb_periods=NB_PERIODS, points_per_period=64)
         
         phase_voltages = SimulateGenerator.simulate(self.generator, time_steps)
-        phase_voltages = SimulateGenerator.apply_noise(self.generator, phase_voltages)
+        noised_phase_voltages = SimulateGenerator.apply_noise(self.generator, phase_voltages)
         
-        self.analytics.draw_simulation_results(time_steps, phase_voltages)
+        self.analytics.draw_simulation_results(time_steps, noised_phase_voltages)
         self.analytics.draw_overtones_results(dt, self.generator.frequency, phase_voltages)

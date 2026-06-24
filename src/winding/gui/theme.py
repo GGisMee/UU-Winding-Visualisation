@@ -84,6 +84,14 @@ class FusionTheme(Enum):
     # Define typography hierarchy directly inside the Enum using enum.nonmember
     fonts = nonmember(FontStyles("Artifakt Element"))
 
+    # Colours for the phases
+    PHASE_COLORS = ["#EF4444", "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316", "#84CC16", "#6366F1"]
+
+    def get_color(self):
+        import customtkinter as ctk
+        mode_idx = 0 if ctk.get_appearance_mode() == "Light" else 1
+        return self.value[mode_idx]
+
 
 class Futuristic(Enum):
     """
@@ -135,6 +143,14 @@ class Futuristic(Enum):
 
     # Define typography hierarchy directly inside the Enum using enum.nonmember
     fonts = nonmember(FontStyles("Montserrat"))
+
+    # Colours for the phases
+    PHASE_COLORS = ["#EF4444", "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316", "#84CC16", "#6366F1"]
+
+    def get_color(self):
+        import customtkinter as ctk
+        mode_idx = 0 if ctk.get_appearance_mode() == "Light" else 1
+        return self.value[mode_idx]
 
 
 # --- SETUP CONFIGURATION ---

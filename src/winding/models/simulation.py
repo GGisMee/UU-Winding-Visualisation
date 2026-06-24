@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
+from .magnets import MagnetFunction
 
 import numpy as np
 
@@ -97,7 +98,7 @@ class Winding:
         return np.sum(self.winding_matrix != 0) # 0 here is empty
 
 @dataclass
-class Material:
+class Magnet:
     """
     Material data.
 
@@ -110,6 +111,7 @@ class Material:
     """
     remanence: float = 1.32
     coercivity: float = 1.04
+    magnet_function: MagnetFunction = MagnetFunction.Smooth_Square
 
 @dataclass
 class OperatingState:
@@ -122,9 +124,12 @@ class OperatingState:
         Mechanical rotational speed of the rotor [rpm].
     noise : float
         Noise parameter for simulations [-].
+    magnet_type : str
+        Type of magnet function to use for simulation.
     """
     RPM: int = 240
     noise: float = 0.02
+    magnet_type: str = "Smooth Square"
 
 
 # --- Beräkningar ---
@@ -141,14 +146,14 @@ class Generator:
         The geometric dimensions of the generator.
     wind : Winding
         The winding configuration and layout.
-    material : Material
-        The material properties of the generator.
+    Magnet: Magnet
+        The material and magnet properties of the generator.
     state : OperatingState
         The current operating state.
     """
     geom:Geometry
     wind:Winding
-    material: Material
+    magnet: Magnet
     state:OperatingState
 
     # -- 1. Geometri & Mekanik --
@@ -192,7 +197,7 @@ class Generator:
     @property
     def average_airgap_b_field(self) -> float:
         """Average magnetic flux density in the airgap [T]."""
-        return (self.material.remanence / 0.8) * self.wind.rotor_fill
+        return (self.magnet.remanence / 0.8) * self.wind.rotor_fill
 
     @property
     def induced_e_field(self) -> float:
@@ -267,22 +272,6 @@ class SimulateGenerator:
         net_windings = nb_up - nb_down
         return net_windings
 
-    @staticmethod
-    def magnet(arg: np.ndarray) -> np.ndarray:
-        """
-        Evaluates the magnetic field pattern.
-
-        Parameters
-        ----------
-        arg : np.ndarray of any shape
-            Input array of electrical angles [rad].
-
-        Returns
-        -------
-        np.ndarray of same shape as arg
-            Normalized magnetic field profile [-].
-        """
-        return (np.sign(np.sin(arg)) * (np.sin(arg) ** 2) + 0.228 * np.sin(3 * arg)) / 0.7724
 
     @staticmethod
     def apply_noise(generator:Generator, phase_voltages: np.ndarray) -> np.ndarray:
@@ -337,7 +326,7 @@ class SimulateGenerator:
         relative_angles = rotor_electrical_angles[:, np.newaxis] + generator.electric_angles[np.newaxis, :]
         
         # 2. Evaluate magnetic field. Output shape: (Time, Slots)
-        magnet_field_at_slots = SimulateGenerator.magnet(relative_angles)
+        magnet_field_at_slots = generator.magnet.magnet_function.value(relative_angles)
         
         # 3. Calculate voltages for each phase
         for phase_idx in range(num_phases):
@@ -468,8 +457,8 @@ def calculate():
     geometry = Geometry()
     winding = Winding()
     state = OperatingState()
-    material = Material()
-    generator = Generator(geometry, winding, material, state)
+    magnet = Magnet()
+    generator = Generator(geometry, winding, magnet, state)
 
 
 

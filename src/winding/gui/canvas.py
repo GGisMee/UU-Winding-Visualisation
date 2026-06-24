@@ -27,8 +27,7 @@ class CADCanvas(ctk.CTkFrame):
         self.active_phase = 1
 
         # Canvas drawing container
-        mode_idx = 0 if ctk.get_appearance_mode() == "Light" else 1
-        self.canvas = tk.Canvas(self, bg=Theme.BLUEPRINT_BG.value[mode_idx], highlightthickness=0)
+        self.canvas = tk.Canvas(self, bg=Theme.BLUEPRINT_BG.get_color(), highlightthickness=0)
         self.canvas.pack(fill="both", expand=True, padx=15, pady=(5, 5))
 
         # Bind resize event to redraw canvas dynamically
@@ -77,6 +76,8 @@ class CADCanvas(ctk.CTkFrame):
             if self.matrix[p, s] != target_val:
                 self.matrix[p, s] = target_val
                 self.update_geometry()
+                if self.app and hasattr(self.app, 'on_inputs_changed'):
+                    self.app.on_inputs_changed()
 
     def on_key_press(self, event):
         try:
@@ -96,10 +97,7 @@ class CADCanvas(ctk.CTkFrame):
         if w < 10 or h < 10:
             return
 
-        mode = ctk.get_appearance_mode()
-        idx = 0 if mode == "Light" else 1
-
-        bg_color = Theme.BLUEPRINT_BG.value[idx]
+        bg_color = Theme.BLUEPRINT_BG.get_color()
         self.canvas.delete("all")
         self.canvas.configure(bg=bg_color)
         
@@ -129,10 +127,7 @@ class CADCanvas(ctk.CTkFrame):
         if self.active_phase > self.phases:
             self.active_phase = self.phases
 
-        mode = ctk.get_appearance_mode()
-        idx = 0 if mode == "Light" else 1
-
-        text_color = Theme.TEXT_MAIN.value[idx]
+        text_color = Theme.TEXT_MAIN.get_color()
         
         title_font = ("Arial", int(16 * self.scale_factor), "bold")
         self.canvas.create_text(
@@ -206,7 +201,7 @@ class CADCanvas(ctk.CTkFrame):
                 y1 = y0 + cell_h
 
                 if val == 0:
-                    self.canvas.create_rectangle(x0, y0, x1, y1, fill="", outline=Theme.BORDER.value[idx])
+                    self.canvas.create_rectangle(x0, y0, x1, y1, fill="", outline=Theme.BORDER.get_color())
                     continue
 
                 phase = abs(val)
@@ -214,7 +209,7 @@ class CADCanvas(ctk.CTkFrame):
                 
                 color = phase_colors.get(phase, "#FFFFFF")
 
-                self.canvas.create_rectangle(x0, y0, x1, y1, fill=color, outline=Theme.BORDER.value[idx])
+                self.canvas.create_rectangle(x0, y0, x1, y1, fill=color, outline=Theme.BORDER.get_color())
 
                 cx = (x0 + x1) / 2
                 cy = (y0 + y1) / 2
@@ -241,13 +236,13 @@ class CADCanvas(ctk.CTkFrame):
             self.legend_rects[i] = (lx, ly, lx + legend_item_width, ly + box_size)
             
             if i == 0:
-                color = Theme.BG_SURFACE.value[idx]
+                color = Theme.BG_SURFACE.get_color()
                 label = "Empty"
             else:
                 color = phase_colors.get(i, "#FFFFFF")
                 label = f"Phase {i}"
                 
-            outline_color = Theme.ACCENT.value[idx] if i == self.active_phase else Theme.BORDER.value[idx]
+            outline_color = Theme.ACCENT.get_color() if i == self.active_phase else Theme.BORDER.get_color()
             outline_width = 3 * self.scale_factor if i == self.active_phase else 1 * self.scale_factor
             
             self.canvas.create_rectangle(lx, ly, lx + box_size, ly + box_size, fill=color, outline=outline_color, width=outline_width)

@@ -1,19 +1,13 @@
 from dataclasses import dataclass
-import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
-
 import numpy as np
+from enum import Enum, member
 
-
-import numpy as np
-from dataclasses import dataclass
-from enum import Enum
-
-class Magnets(Enum):
-    sine = lambda arg: np.sin(arg)
-    sinish = lambda arg: (np.sign(np.sin(arg)) * (np.sin(arg) ** 2) + 0.228 * np.sin(3 * arg)) / 0.7724
-    squarish = lambda arg: square_sin(arg, 5)
-    triangleish = lambda arg: triangle_sine(arg, 0.3)
+class MagnetFunction(Enum):
+    """A function specific to a certain magnet which shows how the field changes for different angles"""
+    Smooth_Square = member(lambda arg: (np.sign(np.sin(arg)) * (np.sin(arg) ** 2) + 0.228 * np.sin(3 * arg)) / 0.7724)
+    Sharp_Square = member(lambda arg: square_sin(arg, 5))
+    Rounded_Triangle = member(lambda arg: triangle_sine(arg, 0.3))
 
 def square_sin(x:np.ndarray, k:float) -> np.ndarray:
     """A hyperbolic blend function between sin and square with parameter k

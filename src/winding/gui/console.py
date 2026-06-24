@@ -1,7 +1,62 @@
 import customtkinter as ctk
 import tkinter as tk
+import numpy as np
+import matplotlib
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from .theme import Theme
 from .components import LabeledSlider, MetricRow, TextInfoBox
+
+class MagnetPlotCard(ctk.CTkFrame):
+    def __init__(self, master, var_magnet_type):
+        super().__init__(master, fg_color="transparent")
+        self.var_magnet_type = var_magnet_type
+        
+        self.magnet_fig = Figure(figsize=(3, 2), dpi=100, constrained_layout=True)
+        self.magnet_ax = self.magnet_fig.add_subplot(111)
+        self.magnet_canvas = FigureCanvasTkAgg(self.magnet_fig, master=self)
+        
+        widget = self.magnet_canvas.get_tk_widget()
+        widget.pack(fill="x", pady=(0, 10))
+
+    def update_plot(self):
+        self.magnet_ax.clear()
+        
+        bg_color = Theme.BG_SURFACE.get_color()
+        text_color = Theme.TEXT_MAIN.get_color()
+        border_color = Theme.BORDER.get_color()
+        accent_color = Theme.ACCENT.get_color()
+        
+        self.magnet_fig.patch.set_facecolor(bg_color)
+        self.magnet_ax.set_facecolor(bg_color)
+        
+        self.magnet_ax.set_xticks([])
+        self.magnet_ax.set_yticks([])
+        self.magnet_ax.spines["top"].set_visible(False)
+        self.magnet_ax.spines["right"].set_visible(False)
+        self.magnet_ax.spines["left"].set_visible(False)
+        self.magnet_ax.spines["bottom"].set_color(border_color)
+            
+        x = np.linspace(0, 2*np.pi, 200)
+        try:
+            from ..models.magnets import MagnetFunction
+            y = MagnetFunction[self.var_magnet_type.get().replace(" ", "_")].value(x)
+            
+            self.magnet_ax.plot(x, y, color=accent_color, linewidth=2)
+            self.magnet_ax.fill_between(x, y, 0, color=accent_color, alpha=0.15)
+            self.magnet_ax.axhline(0, color=border_color, linewidth=1, linestyle="--")
+            
+            self.magnet_ax.set_box_aspect(2/3)
+            
+            self.magnet_ax.set_ylim(-1.2, 1.2)
+            self.magnet_ax.set_xlim(0, 2*np.pi)
+            self.magnet_ax.set_title("Field Profile", color=text_color, fontsize=12, pad=5)
+        except Exception as e:
+            print("ERROR IN PLOT:", e)
+            import traceback
+            traceback.print_exc()
+        self.magnet_canvas.draw()
+
 
 class ConsolePanel(ctk.CTkFrame):
     def __init__(self, parent, app=None):
@@ -52,11 +107,13 @@ class ConsolePanel(ctk.CTkFrame):
         init_poles = self.app.winding_state.poles if self.app else 4
         init_slots = self.app.winding_state.slots if self.app else 38
         init_rpm = self.app.operating_state.RPM if self.app else 240
+        init_magnet = self.app.generator.magnet.magnet_function.name.replace("_", " ") if self.app else "Smooth Square"
 
         self.var_phases = ctk.DoubleVar(value=init_phases)
         self.var_poles = ctk.DoubleVar(value=init_poles)
         self.var_slots = ctk.DoubleVar(value=init_slots)
         self.var_rpm = ctk.DoubleVar(value=init_rpm)
+        self.var_magnet_type = ctk.StringVar(value=init_magnet)
 
         # Sliders
         self.slider_phases = LabeledSlider(
@@ -79,6 +136,24 @@ class ConsolePanel(ctk.CTkFrame):
         )
         self.slider_rpm.pack(fill="x", pady=10)
 
+        # --- Magnet Function ---
+        ctk.CTkLabel(self.settings_frame, text="Magnet Function", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value).pack(anchor="w", pady=(10, 5))
+        self.magnet_menu = ctk.CTkOptionMenu(
+            self.settings_frame,
+            values=["Smooth Square", "Sharp Square", "Rounded Triangle"],
+            variable=self.var_magnet_type,
+            command=self.on_change_magnet_type,
+            fg_color=Theme.BG_INPUT.value,
+            button_color=Theme.BUTTON_BG.value,
+            button_hover_color=Theme.BUTTON_HOVER.value,
+            text_color=Theme.TEXT_MAIN.value
+        )
+        self.magnet_menu.pack(fill="x", pady=(0, 10))
+        
+        self.magnet_plot_card = MagnetPlotCard(self.settings_frame, self.var_magnet_type)
+        self.magnet_plot_card.pack(fill="x")
+        self.magnet_plot_card.update_plot()
+
         # Simulate Button
         self.btn_simulate = ctk.CTkButton(
             self.settings_frame, 
@@ -89,7 +164,7 @@ class ConsolePanel(ctk.CTkFrame):
             text_color=Theme.TEXT_MAIN.value,
             command=self.app.run_simulation if self.app else None
         )
-        self.btn_simulate.pack(fill="x", pady=(20, 0))
+        self.btn_simulate.pack(fill="x", pady=(15, 0))
 
     def on_change_phases(self, val):
         if self.app:
@@ -121,12 +196,23 @@ class ConsolePanel(ctk.CTkFrame):
             if hasattr(self.app, 'on_inputs_changed'):
                 self.app.on_inputs_changed()
 
+    def on_change_magnet_type(self, val):
+        if self.app:
+            from ..models.magnets import MagnetFunction
+            self.app.generator.magnet.magnet_function = MagnetFunction[val.replace(" ", "_")]
+            if hasattr(self.app, 'on_inputs_changed'):
+                self.app.on_inputs_changed()
+        self.magnet_plot_card.update_plot()
+
+
+
     def set_inputs_enabled(self, enabled: bool):
         state = "normal" if enabled else "disabled"
         self.slider_phases.configure_slider(state=state)
         self.slider_poles.configure_slider(state=state)
         self.slider_slots.configure_slider(state=state)
         self.slider_rpm.configure_slider(state=state)
+        self.magnet_menu.configure(state=state)
         self.btn_simulate.configure(state=state)
 
     def update_from_models(self):
@@ -139,3 +225,5 @@ class ConsolePanel(ctk.CTkFrame):
             self.slider_slots.update_label()
             self.var_rpm.set(self.app.operating_state.RPM)
             self.slider_rpm.update_label()
+            self.var_magnet_type.set(self.app.generator.magnet.magnet_function.name.replace("_", " "))
+            self.magnet_plot_card.update_plot()
