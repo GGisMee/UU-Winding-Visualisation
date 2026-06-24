@@ -6,7 +6,7 @@ from .console import ConsolePanel
 from .canvas import CADCanvas
 from .analytics import AnalyticsPanel
 from .theme import Theme
-from ..models.simulation import Geometry, Winding, Material, OperatingState, Generator, SimulateGenerator
+from ..models.simulation import Geometry, Winding, Material, OperatingState, Generator, SimulateGenerator, create_steps
 
 
 def load_scale_factor():
@@ -228,8 +228,10 @@ class UnifiedSimulatorApp(ctk.CTk):
     def complete_simulation(self):
         self.console.set_inputs_enabled(True)
         
-        # Or just simulate a fixed 0.2 seconds like the original code
-        time_steps = np.linspace(0, 0.2, 200)
+        dt, time_steps = create_steps(frequency=self.generator.frequency, nb_periods=4, points_per_period=64)
         
         phase_voltages = SimulateGenerator.simulate(self.generator, time_steps)
+        phase_voltages = SimulateGenerator.apply_noise(self.generator, phase_voltages)
+        
         self.analytics.draw_simulation_results(time_steps, phase_voltages)
+        self.analytics.draw_overtones_results(dt, self.generator.frequency, phase_voltages)

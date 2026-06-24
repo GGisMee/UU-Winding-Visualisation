@@ -5,7 +5,7 @@ matplotlib.use("TkAgg")
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from .theme import Theme
-from ..models.simulation import SimulateGenerator
+from ..models.simulation import SimulateGenerator, PostProcess
 
 class AnalyticsPanel(ctk.CTkFrame):
     def __init__(self, parent, app=None):
@@ -45,6 +45,11 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.tabs.pack(fill="both", expand=True, padx=5, pady=5)
         
         self.tabs.add("Overview")
+        self.tabs.add("Overtones")
+        
+        # Overtones Table container
+        self.overtones_frame = ctk.CTkFrame(self.tabs.tab("Overtones"), fg_color="transparent")
+        self.overtones_frame.pack(fill=ctk.BOTH, expand=True, padx=10, pady=10)
 
         mode_idx = 0 if ctk.get_appearance_mode() == "Light" else 1
         bg_color = Theme.BG_SURFACE.value[mode_idx]
@@ -154,6 +159,11 @@ class AnalyticsPanel(ctk.CTkFrame):
             widget.destroy()
         lbl = ctk.CTkLabel(self.table_frame, text="Simulation out of date. Table will appear here.", text_color=Theme.TEXT_MUTED.value)
         lbl.pack(pady=10)
+        
+        for widget in self.overtones_frame.winfo_children():
+            widget.destroy()
+        lbl_ot = ctk.CTkLabel(self.overtones_frame, text="Simulation out of date. Table will appear here.", text_color=Theme.TEXT_MUTED.value)
+        lbl_ot.pack(pady=10)
 
     def draw_simulation_results(self, time_steps, phase_voltages):
         self.show_warning_banner(False)
@@ -222,3 +232,38 @@ class AnalyticsPanel(ctk.CTkFrame):
             text_colors=[None, None, None, None],
             is_summary=True
         )
+
+    def draw_overtones_results(self, dt, fundamental_frequency, phase_voltages):
+        for widget in self.overtones_frame.winfo_children():
+            widget.destroy()
+            
+        N = phase_voltages.shape[-1]
+        voltage_fft = np.fft.rfft(phase_voltages)
+        frequencies = np.fft.rfftfreq(N, d=dt)
+        magnitudes = np.abs(voltage_fft) / N
+        magnitudes[..., 1:] *= 2
+
+        goal_frequencies = np.arange(1, 8, 2) * fundamental_frequency
+        goal_idx = [np.argmin(np.abs(frequencies - gf)) for gf in goal_frequencies]
+        overtone_magnitudes = magnitudes[:, goal_idx]
+        
+        thd_values = PostProcess.THD(overtone_magnitudes)
+
+        from .components import DataTable
+        
+        headers = ["Phase", "1st (f0)", "3rd (3f0)", "5th (5f0)", "7th (7f0)", "THD"]
+        table = DataTable(self.overtones_frame, headers=headers)
+        table.pack(fill=ctk.X, expand=True, pady=5)
+        
+        phase_colors = ["#EF4444", "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316", "#84CC16", "#6366F1"]
+        
+        for phase_idx in range(phase_voltages.shape[0]):
+            row = phase_idx + 1
+            p_color = phase_colors[phase_idx % len(phase_colors)]
+            mags = overtone_magnitudes[phase_idx]
+            thd = thd_values[phase_idx]
+            
+            table.add_row(
+                row_data=[f"Phase {row}", f"{mags[0]:.2f} V", f"{mags[1]:.2f} V", f"{mags[2]:.2f} V", f"{mags[3]:.2f} V", f"{thd*100:.2f} %"],
+                text_colors=[p_color, None, None, None, None, None]
+            )

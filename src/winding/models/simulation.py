@@ -382,9 +382,9 @@ class PostProcess:
     """Processes generator voltage curves and data to get further information about result."""
     
     @staticmethod
-    def overtones(dt:float,fundamental_frequency:float, phase_voltages:np.ndarray):
+    def harmonics(dt:float,fundamental_frequency:float, phase_voltages:np.ndarray) -> np.ndarray:
         """
-        Calculates and plots the FFT spectrum to find overtones.
+        Calculates and plots the FFT spectrum to find harmonics.
 
         Parameters
         ----------
@@ -408,12 +408,25 @@ class PostProcess:
         goal_idx = [np.argmin(np.abs(frequencies-goal_frequency)) for goal_frequency in goal_frequencies]
 
         overtone_magnitudes = magnitudes[:, goal_idx]
-        print("Frekvenser: ", frequencies[goal_idx])
-        print("Magnitudes per phase:\n", overtone_magnitudes)
+        # print("Frekvenser: ", frequencies[goal_idx])
+        # print("Magnitudes per phase:\n", overtone_magnitudes)
 
-        PostProcess.plot_spectrum(frequencies, magnitudes, goal_frequencies, phases=phase_voltages.shape[0])
+        # PostProcess.plot_spectrum(frequencies, magnitudes, goal_frequencies, phases=phase_voltages.shape[0])
 
         return overtone_magnitudes
+
+    @staticmethod
+    def THD(harmonics:np.ndarray) -> np.ndarray:
+        """Calculates THD (total harmonic distortion) for each phase. 
+        
+        Parameters
+        ----------
+        """
+
+        fundamentals, overtones  = np.hsplit(harmonics, [1])
+        THD = np.linalg.norm(overtones, axis=1) /fundamentals.ravel()
+        return THD
+
 
 
     @staticmethod
@@ -468,9 +481,10 @@ def calculate():
 
     
     # 3. Visualize
-    SimulateGenerator.plot_phase_voltages(time_steps, noised_phase_voltages)
+    # SimulateGenerator.plot_phase_voltages(time_steps, noised_phase_voltages)
 
-    PostProcess.overtones(dt, generator.frequency, phase_voltages)
+    harmonics = PostProcess.harmonics(dt, generator.frequency, phase_voltages)
+    print(PostProcess.THD(harmonics))
 
 if __name__ == "__main__":
     calculate()
