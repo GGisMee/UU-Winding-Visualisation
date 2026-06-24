@@ -48,7 +48,7 @@ class Winding:
         Stator factor filled by copper [-].
     rotor_fill : float
         Fraction of rotor filled by permanent magnet [-].
-    winding_matrix : np.ndarray
+    winding_matrix : np.ndarray of shape (poles, slots)
         Matrix containing the winding layout.
     """
     poles: int = 4
@@ -175,7 +175,7 @@ class Generator:
 
     @property
     def electric_angles(self) -> np.ndarray:
-        """Electrical angle position for each slot [rad]."""
+        """Electrical angle position for each slot [rad] as a np.ndarray of shape (slots,)."""
         return (np.arange(1, self.wind.slots + 1) * self.angle_per_slot) % (2 * np.pi)
 
     # -- 3. Elektricitet & Magnetism --
@@ -223,13 +223,13 @@ class SimulateGenerator:
         ----------
         phases : int
             Number of electrical phases.
-        winding_matrix : np.ndarray
-            Winding matrix of shape (poles, slots).
+        winding_matrix : np.ndarray of shape (poles, slots)
+            Winding matrix.
 
         Returns
         -------
-        tuple[np.ndarray, np.ndarray, np.ndarray]
-            A tuple containing three arrays, each of shape (phases,):
+        tuple of np.ndarray
+            A tuple containing three np.ndarray of shape (phases,), representing:
             - Total windings (up + down)
             - Up windings
             - Down windings
@@ -249,13 +249,13 @@ class SimulateGenerator:
         ----------
         phases : int
             Number of electrical phases.
-        winding_matrix : np.ndarray
-            Winding matrix of shape (poles, slots).
+        winding_matrix : np.ndarray of shape (poles, slots)
+            Winding matrix.
 
         Returns
         -------
-        np.ndarray
-            A matrix of shape (phases, slots) with net windings.
+        np.ndarray of shape (phases, slots)
+            A matrix containing net windings.
         """
         phases_arr = np.arange(1, phases + 1)
 
@@ -274,12 +274,12 @@ class SimulateGenerator:
 
         Parameters
         ----------
-        arg : np.ndarray
+        arg : np.ndarray of any shape
             Input array of electrical angles [rad].
 
         Returns
         -------
-        np.ndarray
+        np.ndarray of same shape as arg
             Normalized magnetic field profile [-].
         """
         return (np.sign(np.sin(arg)) * (np.sin(arg) ** 2) + 0.228 * np.sin(3 * arg)) / 0.7724
@@ -293,13 +293,13 @@ class SimulateGenerator:
         ----------
         generator : Generator
             The configured generator object.
-        time_steps : np.ndarray
+        time_steps : np.ndarray of shape (len(time_steps),)
             Array of simulation time steps [s].
 
         Returns
         -------
-        np.ndarray
-            A 2D array of phase voltages with shape (phases, len(time_steps)) [V].
+        np.ndarray of shape (phases, len(time_steps))
+            A 2D array of phase voltages [V].
         """
         net_windings_per_slot =SimulateGenerator.get_net_windings_per_slot(generator.wind.phases, generator.wind.winding_matrix)
         total_windings_per_phase = SimulateGenerator.get_total_windings_per_phase(generator.wind.phases, generator.wind.winding_matrix)[0]
@@ -342,9 +342,9 @@ class SimulateGenerator:
 
         Parameters
         ----------
-        time_steps : np.ndarray
+        time_steps : np.ndarray of shape (len(time_steps),)
             Array of simulation time steps [s].
-        phase_voltages : np.ndarray
+        phase_voltages : np.ndarray of shape (phases, len(time_steps))
             Array of phase voltages [V].
         """
         plt.figure(figsize=(10, 6))
@@ -377,7 +377,7 @@ class PostProcess:
             Time step between samples [s].
         fundamental_frequency : float
             The fundamental electrical frequency of the signal [Hz].
-        phase_voltages : np.ndarray
+        phase_voltages : np.ndarray of shape (phases, len(time_steps))
             Array of phase voltages [V].
         """
         phase_voltages = phase_voltages[1]
@@ -394,7 +394,7 @@ class PostProcess:
         magnituder_pos = magnitudes[pos_index]
 
         # 4. Definiera övertonernas frekvenser för att rita ut linjer i grafen
-        goal_frequencies = np.arange(1,8, 2)*fundamental_frequency/2
+        goal_frequencies = np.arange(1,8, 2)*fundamental_frequency
 
         # 5. Plotta spektrumet
         plt.figure(figsize=(10, 5))
