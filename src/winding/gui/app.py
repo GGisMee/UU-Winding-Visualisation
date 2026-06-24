@@ -1,11 +1,12 @@
 import os
 import customtkinter as ctk
+import numpy as np
 import tkinter as tk
 from .console import ConsolePanel
 from .canvas import CADCanvas
 from .analytics import AnalyticsPanel
 from .theme import Theme
-from ..models.simulation import Geometry, Winding, Material, OperatingState, Generator
+from ..models.simulation import Geometry, Winding, Material, OperatingState, Generator, simulate_generator
 
 
 def load_scale_factor():
@@ -227,8 +228,6 @@ class UnifiedSimulatorApp(ctk.CTk):
     def complete_simulation(self):
         self.console.set_inputs_enabled(True)
         
-        import numpy as np
-        from ..models.simulation import simulate_generator
         # Or just simulate a fixed 0.2 seconds like the original code
         time_steps = np.linspace(0, 0.2, 200)
         
