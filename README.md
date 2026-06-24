@@ -11,9 +11,9 @@ The system is built using **Domain-Driven Design (DDD)** principles to separate 
 ```mermaid
 graph TD
     User[User Input] -->|Modifies settings| Geom[Geometry]
-    User -->|Modifies settings| Wind[Winding]
-    User -->|Modifies settings| Mat[Material]
-    User -->|Modifies settings| State[OperatingState]
+    Config[Configuration file] -->|Modifies settings| Wind[Winding]
+    Config -->|Modifies settings| Mat[Material]
+    Config -->|Modifies settings| State[OperatingState]
     
     Geom -->|Inputs| Gen[Generator]
     Wind -->|Inputs| Gen
