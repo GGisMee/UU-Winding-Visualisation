@@ -8,7 +8,7 @@ class LabeledSlider(ctk.CTkFrame):
     and a slider to modify it.
     """
     def __init__(self, parent, label_template: str, variable: ctk.DoubleVar, 
-                 from_:int, to:int, number_of_steps: int, command: Callable, **kwargs):
+                 from_:int, to:int, number_of_steps: int, command: Callable, tooltip_text: str|None = None, **kwargs):
         super().__init__(parent, fg_color="transparent", **kwargs)
         self.label_template = label_template
         self.variable = variable
@@ -22,6 +22,9 @@ class LabeledSlider(ctk.CTkFrame):
             text_color=Theme.TEXT_MAIN.value
         )
         self.label.pack(anchor="w", padx=0, pady=(2, 0))
+        
+        if tooltip_text:
+            ToolTip(self.label, tooltip_text, small=True)
         
         # Slider
         self.slider = ctk.CTkSlider(
@@ -123,7 +126,7 @@ class DataTable(ctk.CTkFrame):
     A reusable table component with styled headers, alternating row colors,
     and optional summary rows.
     """
-    def __init__(self, parent, headers: list[str], **kwargs):
+    def __init__(self, parent, headers: list[str], header_tooltips: list[str | None] | None = None, **kwargs):
         super().__init__(
             parent,
             fg_color=Theme.BG_SURFACE.value,
@@ -133,6 +136,7 @@ class DataTable(ctk.CTkFrame):
             **kwargs
         )
         self.headers = headers
+        self.header_tooltips = header_tooltips
         self.grid_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.grid_frame.pack(fill="both", expand=True, padx=2, pady=2)
         
@@ -147,8 +151,10 @@ class DataTable(ctk.CTkFrame):
         for col, text in enumerate(self.headers):
             lbl = ctk.CTkLabel(self.grid_frame, text=text, font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value, fg_color=Theme.BOX_BG.value, corner_radius=0)
             lbl.grid(row=0, column=col, sticky="nsew", pady=(0, 1), ipadx=5, ipady=4)
+            if self.header_tooltips and col < len(self.header_tooltips) and self.header_tooltips[col]:
+                ToolTip(lbl, self.header_tooltips[col], small=True)
 
-    def add_row(self, row_data: list, text_colors: list = None, is_summary: bool = False):
+    def add_row(self, row_data: list, text_colors: list | None = None, is_summary: bool = False):
         bg_color = Theme.BOX_BG.value if is_summary else (Theme.BG_SURFACE.value if self.row_count % 2 != 0 else Theme.BG_INPUT.value)
         font = Theme.fonts.BODY_BOLD if is_summary else Theme.fonts.BODY
         
@@ -175,10 +181,11 @@ class ToolTip:
     """
     A hover-based tooltip overlay that appears after a delay.
     """
-    def __init__(self, widget, text, delay=500):
+    def __init__(self, widget, text, delay=500, small=False):
         self.widget = widget
         self.text = text
         self.delay = delay
+        self.small = small
         self.tooltip_window = None
         self.id = None
         self.mouse_x = 0
@@ -225,18 +232,24 @@ class ToolTip:
         tw.wm_geometry(f"+{x}+{y}")
         tw.attributes("-topmost", True)
         
-        frame = ctk.CTkFrame(tw, fg_color=Theme.BOX_BG.value, corner_radius=8, border_width=1, border_color=Theme.BORDER.value)
+        cr = 4 if self.small else 8
+        frame = ctk.CTkFrame(tw, fg_color=Theme.BOX_BG.value, corner_radius=cr, border_width=1, border_color=Theme.BORDER.value)
         frame.pack(fill="both", expand=True)
+        
+        fnt = Theme.fonts.MUTED if self.small else Theme.fonts.BODY
+        px = 8 if self.small else 16
+        py = 8 if self.small else 16
+        wl = 200 if self.small else 350
         
         label = ctk.CTkLabel(
             frame, 
             text=self.text, 
             justify='left',
             text_color=Theme.TEXT_MAIN.value,
-            font=Theme.fonts.BODY,
-            wraplength=350
+            font=fnt,
+            wraplength=wl
         )
-        label.pack(padx=16, pady=16)
+        label.pack(padx=px, pady=py)
 
     def hidetip(self):
         tw = self.tooltip_window
