@@ -132,7 +132,7 @@ class CADCanvas(ctk.CTkFrame):
         title_font = ("Arial", int(16 * self.scale_factor), "bold")
         self.canvas.create_text(
             w / 2, 25 * self.scale_factor, 
-            text="Stator Winding Layout", 
+            text="Winding Layout", 
             fill=text_color, 
             font=title_font
         )
