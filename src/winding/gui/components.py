@@ -168,3 +168,78 @@ class DataTable(ctk.CTkFrame):
             if int(info.get("row", 0)) > 0:
                 widget.destroy()
         self.row_count = 1
+
+
+
+class ToolTip:
+    """
+    A hover-based tooltip overlay that appears after a delay.
+    """
+    def __init__(self, widget, text, delay=500):
+        self.widget = widget
+        self.text = text
+        self.delay = delay
+        self.tooltip_window = None
+        self.id = None
+        self.mouse_x = 0
+        self.mouse_y = 0
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Leave>", self.leave)
+        self.widget.bind("<Motion>", self.motion)
+        self.widget.bind("<ButtonPress>", self.leave)
+
+    def enter(self, event=None):
+        if event:
+            self.mouse_x = event.x_root
+            self.mouse_y = event.y_root
+        self.schedule()
+
+    def motion(self, event):
+        self.mouse_x = event.x_root
+        self.mouse_y = event.y_root
+
+    def leave(self, event=None):
+        self.unschedule()
+        self.hidetip()
+
+    def schedule(self):
+        self.unschedule()
+        self.id = self.widget.after(self.delay, self.showtip)
+
+    def unschedule(self):
+        id_ = self.id
+        self.id = None
+        if id_:
+            self.widget.after_cancel(id_)
+
+    def showtip(self):
+        if self.tooltip_window:
+            return
+        
+        # Offset slightly from the mouse to prevent flicker
+        x = self.mouse_x + 20
+        y = self.mouse_y + 20
+        
+        self.tooltip_window = tw = ctk.CTkToplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        tw.attributes("-topmost", True)
+        
+        frame = ctk.CTkFrame(tw, fg_color=Theme.BOX_BG.value, corner_radius=8, border_width=1, border_color=Theme.BORDER.value)
+        frame.pack(fill="both", expand=True)
+        
+        label = ctk.CTkLabel(
+            frame, 
+            text=self.text, 
+            justify='left',
+            text_color=Theme.TEXT_MAIN.value,
+            font=Theme.fonts.BODY,
+            wraplength=350
+        )
+        label.pack(padx=16, pady=16)
+
+    def hidetip(self):
+        tw = self.tooltip_window
+        self.tooltip_window = None
+        if tw:
+            tw.destroy()
