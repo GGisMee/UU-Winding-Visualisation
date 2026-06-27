@@ -170,7 +170,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         # Load initial flag image to prevent CustomTkinter layout bugs where configure(image=...) fails
         flag_name = self.lang_manager.get("flag_icon")
         if flag_name:
-            icon_path = self.lang_manager.get_asset_path(os.path.join("assets", "icons", flag_name))
+            icon_path = self.lang_manager.get_asset_path(os.path.join("assets", "icons", str(flag_name)))
             self.current_flag_img = ctk.CTkImage(
                 light_image=Image.open(icon_path),
                 size=(16, 16)
@@ -202,7 +202,7 @@ class UnifiedSimulatorApp(ctk.CTk):
     def update_flag_button(self):
         flag_name = self.lang_manager.get("flag_icon")
         if flag_name:
-            icon_path = self.lang_manager.get_asset_path(os.path.join("assets", "icons", flag_name))
+            icon_path = self.lang_manager.get_asset_path(os.path.join("assets", "icons", str(flag_name)))
             self.current_flag_img = ctk.CTkImage(
                 light_image=Image.open(icon_path),
                 size=(16, 16)
@@ -220,9 +220,10 @@ class UnifiedSimulatorApp(ctk.CTk):
         
         # Update Theme Dropdown Option values
         themes = self.lang_manager.get("themes", {})
-        self.theme_menu.configure(values=[themes.get(k, k) for k in ["Dark", "Light", "System"]])
-        self._current_theme_eng = getattr(self, '_current_theme_eng', "System")
-        self.theme_menu.set(themes.get(self._current_theme_eng, self._current_theme_eng))
+        if isinstance(themes, dict):
+            self.theme_menu.configure(values=[str(themes.get(k, k)) for k in ["Dark", "Light", "System"]])
+            self._current_theme_eng = getattr(self, '_current_theme_eng', "System")
+            self.theme_menu.set(str(themes.get(self._current_theme_eng, self._current_theme_eng)))
         
         
         # Propagate to sub-panels if they exist
@@ -236,7 +237,9 @@ class UnifiedSimulatorApp(ctk.CTk):
     def on_theme_change(self, choice: str):
         # Map translated dropdown name back to English key
         themes = self.lang_manager.get("themes", {})
-        eng_val = next((eng for eng, tr in themes.items() if tr == choice), choice)
+        eng_val = choice
+        if isinstance(themes, dict):
+            eng_val = next((str(eng) for eng, tr in themes.items() if tr == choice), choice)
         
         self._current_theme_eng = eng_val
         ctk.set_appearance_mode(eng_val.lower())
@@ -288,11 +291,11 @@ class UnifiedSimulatorApp(ctk.CTk):
     def run_simulation(self):
         # Disable controls during simulation
         self.console.set_inputs_enabled(False)
-        self.analytics.show_loading(True, self.lang_manager.get("analytics.lbl_loading_status_init"))
+        self.analytics.show_loading(True, str(self.lang_manager.get("analytics.lbl_loading_status_init")))
 
         # Step-by-step loading progress animation
-        self.after(500, lambda: self.analytics.set_loading_status(self.lang_manager.get("analytics.lbl_loading_status_solving")))
-        self.after(1200, lambda: self.analytics.set_loading_status(self.lang_manager.get("analytics.lbl_loading_status_voltages")))
+        self.after(500, lambda: self.analytics.set_loading_status(str(self.lang_manager.get("analytics.lbl_loading_status_solving"))))
+        self.after(1200, lambda: self.analytics.set_loading_status(str(self.lang_manager.get("analytics.lbl_loading_status_voltages"))))
         self.after(2000, self.complete_simulation)
 
     def complete_simulation(self):

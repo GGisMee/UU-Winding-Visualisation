@@ -61,7 +61,7 @@ class CADCanvas(ctk.CTkFrame):
             self.overlay_frame, 
             wrap="word", 
             fg_color="transparent", 
-            text_color=Theme.TEXT_MAIN.value,
+            text_color=Theme.TEXT_MAIN.value, # type: ignore
             width=650
         )
         self.overlay_textbox.pack(expand=True, fill="y", pady=60)

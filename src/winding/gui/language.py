@@ -9,9 +9,8 @@ class LanguageManager:
         self.load_language(default_lang)
 
     def get_asset_path(self, relative_path):
-        try:
-            base_path = sys._MEIPASS
-        except AttributeError:
+        base_path = getattr(sys, '_MEIPASS', None)
+        if base_path is None:
             # language.py is in src/winding/gui/, so parent of parent is src/winding/
             base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         return os.path.join(base_path, relative_path)
@@ -25,7 +24,7 @@ class LanguageManager:
             print(f"Warning: Language file {file_path} not found!")
             self.strings = {}
 
-    def get(self, dotted_key, default=""):
+    def get(self, dotted_key, default=None):
         """Retrieves a nested string or list from the TOML data using dotted notation."""
         parts = dotted_key.split(".")
         val = self.strings
@@ -33,5 +32,5 @@ class LanguageManager:
             if isinstance(val, dict) and part in val:
                 val = val[part]
             else:
-                return default if default else f"[{dotted_key}]"
+                return default if default is not None else f"[{dotted_key}]"
         return val
