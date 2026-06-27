@@ -49,6 +49,10 @@ class LabeledSlider(ctk.CTkFrame):
     def update_label(self):
         self.label.configure(text=self.label_template.format(value=self.variable.get()))
 
+    def update_label_template(self, new_template):
+        self.label_template = new_template
+        self.update_label()
+
     def configure_slider(self, **kwargs):
         self.slider.configure(**kwargs)
 

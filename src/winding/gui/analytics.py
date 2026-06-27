@@ -100,13 +100,13 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.loading_container = ctk.CTkFrame(self.loading_overlay, fg_color=Theme.BG_SURFACE.value)
         self.loading_container.place(relx=0.5, rely=0.45, anchor="center")
 
-        lbl = ctk.CTkLabel(
+        self.lbl_loading = ctk.CTkLabel(
             self.loading_container, 
             text="SIMULATION RUNNING", 
             font=Theme.fonts.SUBTITLE, 
             text_color=Theme.ACCENT.value
         )
-        lbl.pack(pady=5)
+        self.lbl_loading.pack(pady=5)
         
         self.lbl_loading_status = ctk.CTkLabel(
             self.loading_container, 
@@ -162,19 +162,21 @@ class AnalyticsPanel(ctk.CTkFrame):
 
         self.figure.patch.set_facecolor(bg_color)
         self.ax.set_facecolor(bg_color)
-        self.ax.text(0.5, 0.5, "[ Simulation Out of Date ]\nClick 'Simulate' to plot curves.",
+        msg = self.app.lang_manager.get("analytics.chart_out_of_date") if self.app else "[ Simulation Out of Date ]\nClick 'Simulate' to plot curves."
+        self.ax.text(0.5, 0.5, msg,
                 ha='center', va='center', color=muted_color, fontweight='bold', fontsize=12)
         self.ax.axis('off')
         self.canvas.draw()
 
+        msg_tbl = self.app.lang_manager.get("analytics.table_out_of_date") if self.app else "Simulation out of date. Table will appear here."
         for widget in self.table_frame.winfo_children():
             widget.destroy()
-        lbl = ctk.CTkLabel(self.table_frame, text="Simulation out of date. Table will appear here.", text_color=Theme.TEXT_MUTED.value)
+        lbl = ctk.CTkLabel(self.table_frame, text=msg_tbl, text_color=Theme.TEXT_MUTED.value)
         lbl.pack(pady=10)
         
         for widget in self.overtones_frame.winfo_children():
             widget.destroy()
-        lbl_ot = ctk.CTkLabel(self.overtones_frame, text="Simulation out of date. Table will appear here.", text_color=Theme.TEXT_MUTED.value)
+        lbl_ot = ctk.CTkLabel(self.overtones_frame, text=msg_tbl, text_color=Theme.TEXT_MUTED.value)
         lbl_ot.pack(pady=10)
 
     def draw_simulation_results(self, time_steps, phase_voltages):
@@ -198,18 +200,23 @@ class AnalyticsPanel(ctk.CTkFrame):
         for spine in self.ax.spines.values():
             spine.set_color(border_color)
             
-        self.ax.set_title("Phase Voltages Over Time", color=text_color)
-        self.ax.set_xlabel("Time [s]")
-        self.ax.set_ylabel("Voltage [V]")
+        title = self.app.lang_manager.get("analytics.chart_title") if self.app else "Phase Voltages Over Time"
+        xlabel = self.app.lang_manager.get("analytics.xlabel") if self.app else "Time [s]"
+        ylabel = self.app.lang_manager.get("analytics.ylabel") if self.app else "Voltage [V]"
+        self.ax.set_title(title, color=text_color)
+        self.ax.set_xlabel(xlabel, color=text_color)
+        self.ax.set_ylabel(ylabel, color=text_color)
 
         phase_colors = Theme.PHASE_COLORS.value
 
 
+        phase_label_fmt = self.app.lang_manager.get("table_windings.phase_row") if self.app else "Phase {row}"
         for phase_idx in range(phase_voltages.shape[0]):
             color = phase_colors[phase_idx % len(phase_colors)]
-            self.ax.plot(time_steps, phase_voltages[phase_idx, :], label=f"Phase {phase_idx + 1}", color=color)
+            self.ax.plot(time_steps, phase_voltages[phase_idx, :], label=phase_label_fmt.format(row=phase_idx + 1), color=color)
 
-        self.ax.plot(time_steps, np.sum(phase_voltages, axis=0), label="Sum of phase voltages", color="Black")
+        sum_label = self.app.lang_manager.get("analytics.chart_sum", "Sum of phase voltages") if self.app else "Sum of phase voltages"
+        self.ax.plot(time_steps, np.sum(phase_voltages, axis=0), label=sum_label, color="Black")
 
         self.ax.legend(facecolor=bg_color, edgecolor=border_color, labelcolor=text_color, loc='upper right')
         self.ax.grid(True, linestyle='--', alpha=0.6, color=border_color)
@@ -228,24 +235,26 @@ class AnalyticsPanel(ctk.CTkFrame):
         generator = self.app.generator
         total, up, down = SimulateGenerator.get_total_windings_per_phase(generator.wind.phases, generator.wind.winding_matrix)
 
-        headers = ["Phase", "Total Windings", "Up", "Down"]
-        tooltips = ["Electrical phase", "Total number of windings for this phase", "Number of windings with positive polarity", "Number of windings with negative polarity"]
+        headers = self.app.lang_manager.get("table_windings.headers") if self.app else ["Phase", "Total Windings", "Up", "Down"]
+        tooltips = self.app.lang_manager.get("table_windings.tooltips") if self.app else ["Electrical phase", "Total number of windings for this phase", "Number of windings with positive polarity", "Number of windings with negative polarity"]
         table = DataTable(self.table_frame, headers=headers, header_tooltips=tooltips)
         table.pack(fill=ctk.X, expand=True, pady=5)
         
         phase_colors = Theme.PHASE_COLORS.value
         
+        phase_label_fmt = self.app.lang_manager.get("table_windings.phase_row") if self.app else "Phase {row}"
         for phase_idx in range(generator.wind.phases):
             row = phase_idx + 1
             p_color = phase_colors[phase_idx % len(phase_colors)]
             
             table.add_row(
-                row_data=[f"Phase {row}", total[phase_idx], up[phase_idx], down[phase_idx]],
+                row_data=[phase_label_fmt.format(row=row), total[phase_idx], up[phase_idx], down[phase_idx]],
                 text_colors=[p_color, None, None, None]
             )
 
+        total_lbl = self.app.lang_manager.get("table_windings.total_row", "Total") if self.app else "Total"
         table.add_row(
-            row_data=["Total", total.sum(), up.sum(), down.sum()],
+            row_data=[total_lbl, total.sum(), up.sum(), down.sum()],
             text_colors=[None, None, None, None],
             is_summary=True
         )
@@ -263,13 +272,14 @@ class AnalyticsPanel(ctk.CTkFrame):
 
         from .components import DataTable
         
-        headers = ["Phase", "1st (f0)", "3rd (3f0)", "5th (5f0)", "7th (7f0)", "THD"]
-        tooltips = ["Electrical phase", "Fundamental harmonic magnitude", "Third harmonic magnitude", "Fifth harmonic magnitude", "Seventh harmonic magnitude", "Total Harmonic Distortion (THD)"]
+        headers = self.app.lang_manager.get("table_harmonics.headers") if self.app else ["Phase", "1st (f0)", "3rd (3f0)", "5th (5f0)", "7th (7f0)", "THD"]
+        tooltips = self.app.lang_manager.get("table_harmonics.tooltips") if self.app else ["Electrical phase", "Fundamental harmonic magnitude", "Third harmonic magnitude", "Fifth harmonic magnitude", "Seventh harmonic magnitude", "Total Harmonic Distortion (THD)"]
         table = DataTable(self.overtones_frame, headers=headers, header_tooltips=tooltips)
         table.pack(fill=ctk.X, expand=True, pady=5)
         
         phase_colors =Theme.PHASE_COLORS.value
         
+        phase_label_fmt = self.app.lang_manager.get("table_windings.phase_row") if self.app else "Phase {row}"
         for phase_idx in range(phase_voltages.shape[0]):
             row = phase_idx + 1
             p_color = phase_colors[phase_idx % len(phase_colors)]
@@ -277,6 +287,26 @@ class AnalyticsPanel(ctk.CTkFrame):
             thd = thd_values[phase_idx]
             
             table.add_row(
-                row_data=[f"Phase {row}", f"{mags[0]:.2f} V", f"{mags[1]:.2f} V", f"{mags[2]:.2f} V", f"{mags[3]:.2f} V", f"{thd*100:.2f} %"],
+                row_data=[phase_label_fmt.format(row=row), f"{mags[0]:.2f} V", f"{mags[1]:.2f} V", f"{mags[2]:.2f} V", f"{mags[3]:.2f} V", f"{thd*100:.2f} %"],
                 text_colors=[p_color, None, None, None, None, None]
             )
+
+    def update_language(self):
+        if not self.app:
+            return
+            
+        # Update main Title & warning banners
+        self.lbl_title.configure(text=self.app.lang_manager.get("analytics.title"))
+        self.lbl_warning.configure(text=self.app.lang_manager.get("analytics.lbl_warning"))
+        self.lbl_loading.configure(text=self.app.lang_manager.get("analytics.lbl_loading"))
+        
+        # Update Tabs
+        if hasattr(self.tabs, "_segmented_button") and hasattr(self.tabs._segmented_button, "_buttons_dict"):
+            buttons_dict = self.tabs._segmented_button._buttons_dict
+            if "Overview" in buttons_dict:
+                buttons_dict["Overview"].configure(text=self.app.lang_manager.get("tabs.overview", "Overview"))
+            if "Overtones" in buttons_dict:
+                buttons_dict["Overtones"].configure(text=self.app.lang_manager.get("tabs.overtones", "Overtones"))
+
+        # Redraw charts and tables in the newly loaded language
+        self.update_theme()

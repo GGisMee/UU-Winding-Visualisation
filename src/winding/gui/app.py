@@ -76,6 +76,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.paned_window.add(self.analytics, minsize=420, stretch="never")
 
         self.on_inputs_changed()
+        self.update_language()
 
     def create_header(self):
         # Header main container
@@ -103,7 +104,6 @@ class UnifiedSimulatorApp(ctk.CTk):
             height=20
         )
         self.lbl_title.pack(anchor="w", pady=(2, 0))
-        self.lang_manager.register(self.lbl_title, "header.app_title")
 
         ToolTip(self.lbl_title, text="Configure in Settings, Wind the generator in Winding Layout, Simulate and view results in Overview and Overtones.")
 
@@ -117,9 +117,8 @@ class UnifiedSimulatorApp(ctk.CTk):
         # UI Scaling Dropdown
         scale_frame = ctk.CTkFrame(right_header, fg_color="transparent")
         scale_frame.pack(side="left", padx=(0, 15))
-        lbl_zoom = ctk.CTkLabel(scale_frame, font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12)
-        lbl_zoom.pack(anchor="center", pady=(0, 4))
-        self.lang_manager.register(lbl_zoom, "header.lbl_zoom")
+        self.lbl_zoom = ctk.CTkLabel(scale_frame, font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12)
+        self.lbl_zoom.pack(anchor="center", pady=(0, 4))
         self.scale_menu = ctk.CTkOptionMenu(
             scale_frame,
             values=["75%", "100%", "125%", "150%", "200%", "250%", "300%"],
@@ -142,9 +141,8 @@ class UnifiedSimulatorApp(ctk.CTk):
         # Theme Selector Dropdown
         theme_frame = ctk.CTkFrame(right_header, fg_color="transparent")
         theme_frame.pack(side="left", padx=(0, 15))
-        lbl_theme = ctk.CTkLabel(theme_frame, font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12)
-        lbl_theme.pack(anchor="center", pady=(0, 4))
-        self.lang_manager.register(lbl_theme, "header.lbl_theme")
+        self.lbl_theme = ctk.CTkLabel(theme_frame, font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12)
+        self.lbl_theme.pack(anchor="center", pady=(0, 4))
         self.theme_menu = ctk.CTkOptionMenu(
             theme_frame,
             values=["Dark", "Light", "System"],
@@ -159,15 +157,15 @@ class UnifiedSimulatorApp(ctk.CTk):
         )
         self.theme_menu.pack(anchor="center")
         self.theme_menu.set("System")
+        self._current_theme_eng = "System"
 
 
 
         # Language Toggle
         lang_frame = ctk.CTkFrame(right_header, fg_color="transparent")
         lang_frame.pack(side="left", padx=(0, 15))
-        lbl_lang = ctk.CTkLabel(lang_frame, font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12)
-        lbl_lang.pack(anchor="center", pady=(0, 4))
-        self.lang_manager.register(lbl_lang, "header.lbl_lang")
+        self.lbl_lang = ctk.CTkLabel(lang_frame, font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12)
+        self.lbl_lang.pack(anchor="center", pady=(0, 4))
         
         # Load initial flag image to prevent CustomTkinter layout bugs where configure(image=...) fails
         flag_name = self.lang_manager.get("flag_icon")
@@ -199,7 +197,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         else:
             self.language_var.set("english")
             self.lang_manager.load_language("english")
-        self.update_flag_button()
+        self.update_language()
 
     def update_flag_button(self):
         flag_name = self.lang_manager.get("flag_icon")
@@ -211,8 +209,37 @@ class UnifiedSimulatorApp(ctk.CTk):
             )
             self.btn_language.configure(image=self.current_flag_img)
 
+    def update_language(self):
+        self.update_flag_button()
+        
+        # Update header labels
+        self.lbl_title.configure(text=self.lang_manager.get("header.app_title"))
+        self.lbl_zoom.configure(text=self.lang_manager.get("header.lbl_zoom"))
+        self.lbl_theme.configure(text=self.lang_manager.get("header.lbl_theme"))
+        self.lbl_lang.configure(text=self.lang_manager.get("header.lbl_lang"))
+        
+        # Update Theme Dropdown Option values
+        themes = self.lang_manager.get("themes", {})
+        self.theme_menu.configure(values=[themes.get(k, k) for k in ["Dark", "Light", "System"]])
+        self._current_theme_eng = getattr(self, '_current_theme_eng', "System")
+        self.theme_menu.set(themes.get(self._current_theme_eng, self._current_theme_eng))
+        
+        
+        # Propagate to sub-panels if they exist
+        if hasattr(self, "console"):
+            self.console.update_language()
+        if hasattr(self, "analytics"):
+            self.analytics.update_language()
+        if hasattr(self, "cad_canvas"):
+            self.cad_canvas.update_language()
+
     def on_theme_change(self, choice: str):
-        ctk.set_appearance_mode(choice.lower())
+        # Map translated dropdown name back to English key
+        themes = self.lang_manager.get("themes", {})
+        eng_val = next((eng for eng, tr in themes.items() if tr == choice), choice)
+        
+        self._current_theme_eng = eng_val
+        ctk.set_appearance_mode(eng_val.lower())
         self.after(50, self.update_theme_drawings)
 
     def on_scale_dropdown(self, choice: str):
@@ -261,11 +288,11 @@ class UnifiedSimulatorApp(ctk.CTk):
     def run_simulation(self):
         # Disable controls during simulation
         self.console.set_inputs_enabled(False)
-        self.analytics.show_loading(True, "Initializing generator geometry...")
+        self.analytics.show_loading(True, self.lang_manager.get("analytics.lbl_loading_status_init"))
 
         # Step-by-step loading progress animation
-        self.after(500, lambda: self.analytics.set_loading_status("Solving magnetic circuit equations..."))
-        self.after(1200, lambda: self.analytics.set_loading_status("Calculating induced phase voltages..."))
+        self.after(500, lambda: self.analytics.set_loading_status(self.lang_manager.get("analytics.lbl_loading_status_solving")))
+        self.after(1200, lambda: self.analytics.set_loading_status(self.lang_manager.get("analytics.lbl_loading_status_voltages")))
         self.after(2000, self.complete_simulation)
 
     def complete_simulation(self):

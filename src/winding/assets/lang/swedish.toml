@@ -5,3 +5,58 @@ app_title = "Lindningsvisualiserare"
 lbl_zoom = "ZOOM"
 lbl_theme = "TEMA"
 lbl_lang = "SPRÅK"
+
+[console]
+title = "KONTROLLPANEL"
+lbl_magnet = "Magnetfunktion"
+btn_simulate = "Simulera"
+slider_phases = "Faser: {value:.0f}"
+slider_poles = "Poler: {value:.0f}"
+slider_slots = "Spår: {value:.0f}"
+slider_rpm = "Varvtal: {value:.0f}"
+lbl_field_profile = "Fältprofil"
+
+[magnet_types]
+"Smooth Square" = "Mjuk fyrkant"
+"Sharp Square" = "Skarp fyrkant"
+"Rounded Triangle" = "Avrundad triangel"
+
+[analytics]
+title = "ANALYS & RESULTAT"
+chart_title = "Fasspänningar över tid"
+xlabel = "Tid [s]"
+ylabel = "Spänning [V]"
+chart_sum = "Summa av fasspänningar"
+chart_out_of_date = "[ Simulering inaktuell ]\nKlicka på 'Simulera' för att rita kurvor."
+table_out_of_date = "Simulering inaktuell. Tabell kommer att visas här."
+lbl_warning = "⚠️ Värden har ändrats. Klicka på 'Simulera' för att beräkna igen."
+lbl_loading = "SIMULERING KÖRS"
+lbl_loading_status_init = "Initierar generatormodell..."
+lbl_loading_status_solving = "Löser magnetiska kretsekvationer..."
+lbl_loading_status_voltages = "Beräknar inducerade fasspänningar..."
+
+[table_windings]
+headers = ["Fas", "Totala Lindningar", "Upp", "Ner"]
+tooltips = ["Elektrisk fas", "Totala antalet lindningar för denna fas", "Antal lindningar med positiv polaritet", "Antal lindningar med negativ polaritet"]
+phase_row = "Fas {row}"
+total_row = "Totalt"
+
+[table_harmonics]
+headers = ["Fas", "1:a (f0)", "3:e (3f0)", "5:e (5f0)", "7:e (7f0)", "THD"]
+tooltips = ["Elektrisk fas", "Grundtonsamplitud", "Tredje harmoniska amplitud", "Femte harmoniska amplitud", "Sjunde harmoniska amplitud", "Total harmonisk distorsion (THD)"]
+
+[canvas]
+title = "CAD RITARE"
+chart_title = "Lindningslayout"
+legend_empty = "Tom"
+legend_phase = "Fas {phase}"
+
+[tabs]
+settings = "Inställningar"
+overview = "Översikt"
+overtones = "Övertoner"
+
+[themes]
+Dark = "Mörk"
+Light = "Ljus"
+System = "System"

@@ -5,3 +5,58 @@ app_title = "Winding Visualizer"
 lbl_zoom = "ZOOM"
 lbl_theme = "THEME"
 lbl_lang = "LANG"
+
+[console]
+title = "CONTROL CONSOLE"
+lbl_magnet = "Magnet Function"
+btn_simulate = "Simulate"
+slider_phases = "Phases: {value:.0f}"
+slider_poles = "Poles: {value:.0f}"
+slider_slots = "Slots: {value:.0f}"
+slider_rpm = "RPM: {value:.0f}"
+lbl_field_profile = "Field Profile"
+
+[magnet_types]
+"Smooth Square" = "Smooth Square"
+"Sharp Square" = "Sharp Square"
+"Rounded Triangle" = "Rounded Triangle"
+
+[analytics]
+title = "ANALYTICS & RESULTS"
+chart_title = "Phase Voltages Over Time"
+xlabel = "Time [s]"
+ylabel = "Voltage [V]"
+chart_sum = "Sum of phase voltages"
+chart_out_of_date = "[ Simulation Out of Date ]\nClick 'Simulate' to plot curves."
+table_out_of_date = "Simulation out of date. Table will appear here."
+lbl_warning = "⚠️ Inputs changed. Click 'Simulate' to recalculate results."
+lbl_loading = "SIMULATION RUNNING"
+lbl_loading_status_init = "Initializing generator model..."
+lbl_loading_status_solving = "Solving magnetic circuit equations..."
+lbl_loading_status_voltages = "Calculating induced phase voltages..."
+
+[table_windings]
+headers = ["Phase", "Total Windings", "Up", "Down"]
+tooltips = ["Electrical phase", "Total number of windings for this phase", "Number of windings with positive polarity", "Number of windings with negative polarity"]
+phase_row = "Phase {row}"
+total_row = "Total"
+
+[table_harmonics]
+headers = ["Phase", "1st (f0)", "3rd (3f0)", "5th (5f0)", "7th (7f0)", "THD"]
+tooltips = ["Electrical phase", "Fundamental harmonic magnitude", "Third harmonic magnitude", "Fifth harmonic magnitude", "Seventh harmonic magnitude", "Total Harmonic Distortion (THD)"]
+
+[canvas]
+title = "CAD CANVAS"
+chart_title = "Winding Layout"
+legend_empty = "Empty"
+legend_phase = "Phase {phase}"
+
+[tabs]
+settings = "Settings"
+overview = "Overview"
+overtones = "Overtones"
+
+[themes]
+Dark = "Dark"
+Light = "Light"
+System = "System"

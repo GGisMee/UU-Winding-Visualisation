@@ -8,9 +8,10 @@ from .theme import Theme
 from .components import LabeledSlider, MetricRow, TextInfoBox, ToolTip
 
 class MagnetPlotCard(ctk.CTkFrame):
-    def __init__(self, master, var_magnet_type):
+    def __init__(self, master, var_magnet_type, app=None):
         super().__init__(master, fg_color="transparent")
         self.var_magnet_type = var_magnet_type
+        self.app = app
         
         self.magnet_fig = Figure(figsize=(3, 2), dpi=100, constrained_layout=True)
         self.magnet_ax = self.magnet_fig.add_subplot(111)
@@ -50,7 +51,8 @@ class MagnetPlotCard(ctk.CTkFrame):
             
             self.magnet_ax.set_ylim(-1.2, 1.2)
             self.magnet_ax.set_xlim(0, 2*np.pi)
-            self.magnet_ax.set_title("Field Profile", color=text_color, fontsize=12, pad=5)
+            title = self.app.lang_manager.get("console.lbl_field_profile", "Field Profile") if self.app else "Field Profile"
+            self.magnet_ax.set_title(title, color=text_color, fontsize=12, pad=5)
         except Exception as e:
             print("ERROR IN PLOT:", e)
             import traceback
@@ -141,9 +143,9 @@ class ConsolePanel(ctk.CTkFrame):
         self.slider_rpm.pack(fill="x", pady=10)
 
         # --- Magnet Function ---
-        lbl_magnet = ctk.CTkLabel(self.settings_frame, text="Magnet Function", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
-        lbl_magnet.pack(anchor="w", pady=(10, 5))
-        ToolTip(lbl_magnet, "The shape of the magnetic field.", small=True)
+        self.lbl_magnet = ctk.CTkLabel(self.settings_frame, text="Magnet Function", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
+        self.lbl_magnet.pack(anchor="w", pady=(10, 5))
+        ToolTip(self.lbl_magnet, "The shape of the magnetic field.", small=True)
         self.magnet_menu = ctk.CTkOptionMenu(
             self.settings_frame,
             values=["Smooth Square", "Sharp Square", "Rounded Triangle"],
@@ -156,7 +158,7 @@ class ConsolePanel(ctk.CTkFrame):
         )
         self.magnet_menu.pack(fill="x", pady=(0, 10))
         
-        self.magnet_plot_card = MagnetPlotCard(self.settings_frame, self.var_magnet_type)
+        self.magnet_plot_card = MagnetPlotCard(self.settings_frame, self.var_magnet_type, app=self.app)
         self.magnet_plot_card.pack(fill="x")
         self.magnet_plot_card.update_plot()
 
@@ -204,8 +206,12 @@ class ConsolePanel(ctk.CTkFrame):
 
     def on_change_magnet_type(self, val):
         if self.app:
+            # Map translated dropdown name back to English key
+            magnet_types = self.app.lang_manager.get("magnet_types", {})
+            eng_val = next((eng for eng, tr in magnet_types.items() if tr == val), val)
+            
             from ..models.magnets import MagnetFunction
-            self.app.generator.magnet.magnet_function = MagnetFunction[val.replace(" ", "_")]
+            self.app.generator.magnet.magnet_function = MagnetFunction[eng_val.replace(" ", "_")]
             if hasattr(self.app, 'on_inputs_changed'):
                 self.app.on_inputs_changed()
         self.magnet_plot_card.update_plot()
@@ -231,5 +237,34 @@ class ConsolePanel(ctk.CTkFrame):
             self.slider_slots.update_label()
             self.var_rpm.set(self.app.operating_state.RPM)
             self.slider_rpm.update_label()
-            self.var_magnet_type.set(self.app.generator.magnet.magnet_function.name.replace("_", " "))
+            eng_val = self.app.generator.magnet.magnet_function.name.replace("_", " ")
+            translated_val = self.app.lang_manager.get(f"magnet_types.{eng_val}", eng_val)
+            self.var_magnet_type.set(translated_val)
             self.magnet_plot_card.update_plot()
+
+    def update_language(self):
+        if not self.app:
+            return
+            
+        # Update Title & static labels
+        self.lbl_title.configure(text=self.app.lang_manager.get("console.title"))
+        self.lbl_magnet.configure(text=self.app.lang_manager.get("console.lbl_magnet"))
+        self.btn_simulate.configure(text=self.app.lang_manager.get("console.btn_simulate"))
+        
+        # Update Tab
+        if hasattr(self.tabs, "_segmented_button") and hasattr(self.tabs._segmented_button, "_buttons_dict"):
+            buttons_dict = self.tabs._segmented_button._buttons_dict
+            if "Settings" in buttons_dict:
+                buttons_dict["Settings"].configure(text=self.app.lang_manager.get("tabs.settings", "Settings"))
+        
+        # Update Sliders
+        self.slider_phases.update_label_template(self.app.lang_manager.get("console.slider_phases"))
+        self.slider_poles.update_label_template(self.app.lang_manager.get("console.slider_poles"))
+        self.slider_slots.update_label_template(self.app.lang_manager.get("console.slider_slots"))
+        self.slider_rpm.update_label_template(self.app.lang_manager.get("console.slider_rpm"))
+        
+        # Update Magnet Dropdown Option values
+        magnet_types = self.app.lang_manager.get("magnet_types", {})
+        self.magnet_menu.configure(values=list(magnet_types.values()))
+        current_eng = self.app.generator.magnet.magnet_function.name.replace("_", " ")
+        self.var_magnet_type.set(magnet_types.get(current_eng, current_eng))

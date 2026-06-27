@@ -194,9 +194,10 @@ class CADCanvas(ctk.CTkFrame):
         text_color = Theme.TEXT_MAIN.get_color()
         
         title_font = ("Arial", int(16 * self.scale_factor), "bold")
+        chart_title = self.app.lang_manager.get("canvas.chart_title") if self.app else "Winding Layout"
         self.canvas.create_text(
             w / 2, 25 * self.scale_factor, 
-            text="Winding Layout", 
+            text=chart_title, 
             fill=text_color, 
             font=title_font
         )
@@ -301,10 +302,11 @@ class CADCanvas(ctk.CTkFrame):
             
             if i == 0:
                 color = Theme.BG_SURFACE.get_color()
-                label = "Empty"
+                label = self.app.lang_manager.get("canvas.legend_empty") if self.app else "Empty"
             else:
                 color = phase_colors.get(i, "#FFFFFF")
-                label = f"Phase {i}"
+                phase_fmt = self.app.lang_manager.get("canvas.legend_phase") if self.app else "Phase {phase}"
+                label = phase_fmt.format(phase=i)
                 
             outline_color = Theme.ACCENT.get_color() if i == self.active_phase else Theme.BORDER.get_color()
             outline_width = 3 * self.scale_factor if i == self.active_phase else 1 * self.scale_factor
@@ -313,3 +315,9 @@ class CADCanvas(ctk.CTkFrame):
             
             text_weight = "bold" if i == self.active_phase else "normal"
             self.canvas.create_text(lx + box_size + 10 * self.scale_factor, ly + box_size / 2, text=label, fill=text_color, font=("Arial", int(10 * self.scale_factor), text_weight), anchor="w")
+
+    def update_language(self):
+        if not self.app:
+            return
+        self.lbl_title.configure(text=self.app.lang_manager.get("canvas.title"))
+        self.update_geometry()
