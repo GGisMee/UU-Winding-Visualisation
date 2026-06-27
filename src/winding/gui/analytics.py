@@ -229,7 +229,8 @@ class AnalyticsPanel(ctk.CTkFrame):
         total, up, down = SimulateGenerator.get_total_windings_per_phase(generator.wind.phases, generator.wind.winding_matrix)
 
         headers = ["Phase", "Total Windings", "Up", "Down"]
-        table = DataTable(self.table_frame, headers=headers)
+        tooltips = ["Electrical phase", "Total number of windings for this phase", "Number of windings with positive polarity", "Number of windings with negative polarity"]
+        table = DataTable(self.table_frame, headers=headers, header_tooltips=tooltips)
         table.pack(fill=ctk.X, expand=True, pady=5)
         
         phase_colors = Theme.PHASE_COLORS.value
@@ -263,7 +264,8 @@ class AnalyticsPanel(ctk.CTkFrame):
         from .components import DataTable
         
         headers = ["Phase", "1st (f0)", "3rd (3f0)", "5th (5f0)", "7th (7f0)", "THD"]
-        table = DataTable(self.overtones_frame, headers=headers)
+        tooltips = ["Electrical phase", "Fundamental harmonic magnitude", "Third harmonic magnitude", "Fifth harmonic magnitude", "Seventh harmonic magnitude", "Total Harmonic Distortion (THD)"]
+        table = DataTable(self.overtones_frame, headers=headers, header_tooltips=tooltips)
         table.pack(fill=ctk.X, expand=True, pady=5)
         
         phase_colors =Theme.PHASE_COLORS.value

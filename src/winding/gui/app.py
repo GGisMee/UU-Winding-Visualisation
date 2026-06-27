@@ -8,6 +8,7 @@ from .analytics import AnalyticsPanel
 from .theme import Theme
 from ..models.simulation import Geometry, Winding,Magnet, OperatingState, Generator, SimulateGenerator, create_steps
 from ..config import WINDOW_SCALING, NB_PERIODS
+from .components import ToolTip
 
 
 
@@ -31,6 +32,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.minsize(1000, 700)
         self.configure(fg_color=Theme.BG_MAIN.value)
         ctk.set_appearance_mode("system")
+
 
         # --- LAYOUT GRID CONFIGURATION ---
         self.grid_rowconfigure(0, weight=0)  # Header
@@ -90,13 +92,17 @@ class UnifiedSimulatorApp(ctk.CTk):
         
         self.lbl_title = ctk.CTkLabel(
             left_header, 
-            text="Application",
+            text="Winding Visualizer",
             font=Theme.fonts.TITLE,
             text_color=Theme.ACCENT.value,
             padx=0,
             height=20
         )
         self.lbl_title.pack(anchor="w", pady=(2, 0))
+
+        ToolTip(self.lbl_title, text="Configure in Settings, Wind the generator in Winding Layout, Simulate and view results in Overview and Overtones.")
+
+        
 
         # Right Column: Theme selection & scale
         right_header = ctk.CTkFrame(self.header_frame, fg_color="transparent")

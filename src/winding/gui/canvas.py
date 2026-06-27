@@ -1,6 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 from .theme import Theme
+from .components import ToolTip
 
 class CADCanvas(ctk.CTkFrame):
     def __init__(self, parent, app=None):
@@ -16,19 +17,73 @@ class CADCanvas(ctk.CTkFrame):
         self.scale_factor = getattr(parent, "scale_factor", 1.0)
 
         # Title Label
+        self.title_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.title_frame.pack(fill="x", padx=15, pady=(15, 5))
+
         self.lbl_title = ctk.CTkLabel(
-            self, 
+            self.title_frame, 
             text="CAD CANVAS", 
             font=Theme.fonts.SUBTITLE, 
             text_color=Theme.TEXT_MAIN.value
         )
-        self.lbl_title.pack(anchor="w", padx=15, pady=(15, 5))
+        self.lbl_title.pack(side="left")
+        
+        ToolTip(self.lbl_title, "Winding Layout: Change the phase and direction of the winding for each slot and pole to wind the generator.\n\nLeft-click to assign positive polarity, right-click to assign negative polarity. Use number keys to select the active phase.", small=True)
+
+        self.btn_toggle_guide = ctk.CTkButton(
+            self.title_frame,
+            text="ⓘ",
+            font=Theme.fonts.BODY_BOLD,
+            fg_color=Theme.BG_SURFACE.value,
+            border_width=1,
+            border_color=Theme.BORDER.value,
+            hover_color=Theme.BUTTON_HOVER.value,
+            text_color=Theme.TEXT_MAIN.value,
+            width=30,
+            height=30,
+            corner_radius=4,
+            command=self.toggle_guide
+        )
+        self.btn_toggle_guide.pack(side="right")
 
         self.active_phase = 1
+        self.guide_visible = False
 
         # Canvas drawing container
         self.canvas = tk.Canvas(self, bg=Theme.BLUEPRINT_BG.get_color(), highlightthickness=0)
         self.canvas.pack(fill="both", expand=True, padx=15, pady=(5, 5))
+
+        # Overlay frame
+        from .content import WINDING_GUIDE_TEXT
+        
+        self.overlay_frame = ctk.CTkFrame(self.canvas, fg_color=Theme.BG_SURFACE.value, corner_radius=0)
+        self.overlay_textbox = ctk.CTkTextbox(
+            self.overlay_frame, 
+            wrap="word", 
+            fg_color="transparent", 
+            text_color=Theme.TEXT_MAIN.value,
+            width=650
+        )
+        self.overlay_textbox.pack(expand=True, fill="y", pady=60)
+        
+        # Simple Markdown parsing
+        # Access internal _textbox to bypass CTkTextbox font scaling restriction
+        font_h2 = (Theme.fonts.SUBTITLE[0], Theme.fonts.SUBTITLE[1] + 12, "bold")
+        font_body = (Theme.fonts.BODY[0], Theme.fonts.BODY[1] + 6)
+        
+        self.overlay_textbox._textbox.tag_config("h2", font=font_h2, justify="left", spacing1=35, spacing3=15)
+        self.overlay_textbox._textbox.tag_config("body", font=font_body, justify="left", spacing1=0, spacing2=8, spacing3=10)
+        self.overlay_textbox._textbox.tag_config("list_item", font=font_body, justify="left", spacing1=4, spacing2=8, spacing3=4, lmargin1=0, lmargin2=22)
+        
+        for line in WINDING_GUIDE_TEXT.split('\n'):
+            if line.startswith('## '):
+                self.overlay_textbox.insert("end", line[3:] + "\n", "h2")
+            elif line.startswith('• ') or (len(line) > 2 and line[0].isdigit() and line[1:3] == '. '):
+                self.overlay_textbox.insert("end", line + "\n", "list_item")
+            else:
+                self.overlay_textbox.insert("end", line + "\n", "body")
+                
+        self.overlay_textbox.configure(state="disabled")
 
         # Bind resize event to redraw canvas dynamically
         self.canvas.bind("<Configure>", lambda e: self.update_geometry())
@@ -47,6 +102,15 @@ class CADCanvas(ctk.CTkFrame):
         # Keyboard number bindings (0-9)
         for i in range(10):
             self.canvas.bind(str(i), self.on_key_press)
+
+    def toggle_guide(self):
+        if self.guide_visible:
+            self.overlay_frame.place_forget()
+            self.btn_toggle_guide.configure(text="ⓘ")
+        else:
+            self.overlay_frame.place(relwidth=1, relheight=1)
+            self.btn_toggle_guide.configure(text="✕")
+        self.guide_visible = not self.guide_visible
 
     def on_left_click(self, event):
         if hasattr(self, 'legend_rects'):

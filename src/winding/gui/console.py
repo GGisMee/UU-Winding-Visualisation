@@ -5,7 +5,7 @@ import matplotlib
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from .theme import Theme
-from .components import LabeledSlider, MetricRow, TextInfoBox
+from .components import LabeledSlider, MetricRow, TextInfoBox, ToolTip
 
 class MagnetPlotCard(ctk.CTkFrame):
     def __init__(self, master, var_magnet_type):
@@ -117,27 +117,33 @@ class ConsolePanel(ctk.CTkFrame):
 
         # Sliders
         self.slider_phases = LabeledSlider(
-            self.settings_frame, "Phases: {value:.0f}", self.var_phases, 1, 10, 9, self.on_change_phases
+            self.settings_frame, "Phases: {value:.0f}", self.var_phases, 1, 10, 9, self.on_change_phases,
+            tooltip_text="The number of electrical phases (e.g. 3-phase or 5-phase)."
         )
         self.slider_phases.pack(fill="x", pady=10)
 
         self.slider_poles = LabeledSlider(
-            self.settings_frame, "Poles: {value:.0f}", self.var_poles, 2, 10, 4, self.on_change_poles
+            self.settings_frame, "Poles: {value:.0f}", self.var_poles, 2, 10, 4, self.on_change_poles,
+            tooltip_text="The number of magnetic poles in the rotor."
         )
         self.slider_poles.pack(fill="x", pady=10)
 
         self.slider_slots = LabeledSlider(
-            self.settings_frame, "Slots: {value:.0f}", self.var_slots, 10, 100, 90, self.on_change_slots
+            self.settings_frame, "Slots: {value:.0f}", self.var_slots, 10, 100, 90, self.on_change_slots,
+            tooltip_text="The number of slots in the stator."
         )
         self.slider_slots.pack(fill="x", pady=10)
 
         self.slider_rpm = LabeledSlider(
-            self.settings_frame, "RPM: {value:.0f}", self.var_rpm, 10, 1000, 198, self.on_change_rpm
+            self.settings_frame, "RPM: {value:.0f}", self.var_rpm, 10, 1000, 198, self.on_change_rpm,
+            tooltip_text="The rotational speed of the generator in revolutions per minute."
         )
         self.slider_rpm.pack(fill="x", pady=10)
 
         # --- Magnet Function ---
-        ctk.CTkLabel(self.settings_frame, text="Magnet Function", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value).pack(anchor="w", pady=(10, 5))
+        lbl_magnet = ctk.CTkLabel(self.settings_frame, text="Magnet Function", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
+        lbl_magnet.pack(anchor="w", pady=(10, 5))
+        ToolTip(lbl_magnet, "The shape of the magnetic field.", small=True)
         self.magnet_menu = ctk.CTkOptionMenu(
             self.settings_frame,
             values=["Smooth Square", "Sharp Square", "Rounded Triangle"],
