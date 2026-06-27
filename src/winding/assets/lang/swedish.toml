@@ -1,0 +1,7 @@
+flag_icon = "swedish-flag.png"
+
+[header]
+app_title = "Lindningsvisualiserare"
+lbl_zoom = "ZOOM"
+lbl_theme = "TEMA"
+lbl_lang = "SPRÅK"

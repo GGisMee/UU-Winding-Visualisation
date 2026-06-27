@@ -1,0 +1,7 @@
+flag_icon = "english-flag.png"
+
+[header]
+app_title = "Winding Visualizer"
+lbl_zoom = "ZOOM"
+lbl_theme = "THEME"
+lbl_lang = "LANG"

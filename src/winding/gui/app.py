@@ -10,6 +10,7 @@ from .theme import Theme
 from ..models.simulation import Geometry, Winding,Magnet, OperatingState, Generator, SimulateGenerator, create_steps
 from ..config import WINDOW_SCALING, NB_PERIODS
 from .components import ToolTip
+from .language import LanguageManager
 
 
 
@@ -42,6 +43,8 @@ class UnifiedSimulatorApp(ctk.CTk):
 
         # --- STATE INITIALIZATION ---
         self.language_var = ctk.StringVar(value="english")
+        self.lang_manager = LanguageManager(default_lang="english")
+        
         self.geometry_state = Geometry()
         self.winding_state = Winding()
         self.magnet= Magnet()
@@ -94,13 +97,13 @@ class UnifiedSimulatorApp(ctk.CTk):
         
         self.lbl_title = ctk.CTkLabel(
             left_header, 
-            text="Winding Visualizer",
             font=Theme.fonts.TITLE,
             text_color=Theme.ACCENT.value,
             padx=0,
             height=20
         )
         self.lbl_title.pack(anchor="w", pady=(2, 0))
+        self.lang_manager.register(self.lbl_title, "header.app_title")
 
         ToolTip(self.lbl_title, text="Configure in Settings, Wind the generator in Winding Layout, Simulate and view results in Overview and Overtones.")
 
@@ -110,23 +113,13 @@ class UnifiedSimulatorApp(ctk.CTk):
         right_header = ctk.CTkFrame(self.header_frame, fg_color="transparent")
         right_header.grid(row=0, column=1, sticky="e", padx=15, pady=10)
 
-        # Load Flag Images
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        icons_dir = os.path.join(base_dir, "assets", "icons")
-        self.img_flag_en = ctk.CTkImage(
-            light_image=Image.open(os.path.join(icons_dir, "english-flag.png")),
-            size=(16, 16)
-        )
-        self.img_flag_sv = ctk.CTkImage(
-            light_image=Image.open(os.path.join(icons_dir, "swedish-flag.png")),
-            size=(16, 16)
-        )
-
 
         # UI Scaling Dropdown
         scale_frame = ctk.CTkFrame(right_header, fg_color="transparent")
         scale_frame.pack(side="left", padx=(0, 15))
-        ctk.CTkLabel(scale_frame, text="ZOOM", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12).pack(anchor="center", pady=(0, 4))
+        lbl_zoom = ctk.CTkLabel(scale_frame, font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12)
+        lbl_zoom.pack(anchor="center", pady=(0, 4))
+        self.lang_manager.register(lbl_zoom, "header.lbl_zoom")
         self.scale_menu = ctk.CTkOptionMenu(
             scale_frame,
             values=["75%", "100%", "125%", "150%", "200%", "250%", "300%"],
@@ -149,7 +142,9 @@ class UnifiedSimulatorApp(ctk.CTk):
         # Theme Selector Dropdown
         theme_frame = ctk.CTkFrame(right_header, fg_color="transparent")
         theme_frame.pack(side="left", padx=(0, 15))
-        ctk.CTkLabel(theme_frame, text="THEME", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12).pack(anchor="center", pady=(0, 4))
+        lbl_theme = ctk.CTkLabel(theme_frame, font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12)
+        lbl_theme.pack(anchor="center", pady=(0, 4))
+        self.lang_manager.register(lbl_theme, "header.lbl_theme")
         self.theme_menu = ctk.CTkOptionMenu(
             theme_frame,
             values=["Dark", "Light", "System"],
@@ -170,12 +165,25 @@ class UnifiedSimulatorApp(ctk.CTk):
         # Language Toggle
         lang_frame = ctk.CTkFrame(right_header, fg_color="transparent")
         lang_frame.pack(side="left", padx=(0, 15))
-        ctk.CTkLabel(lang_frame, text="LANG", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12).pack(anchor="center", pady=(0, 4))
+        lbl_lang = ctk.CTkLabel(lang_frame, font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12)
+        lbl_lang.pack(anchor="center", pady=(0, 4))
+        self.lang_manager.register(lbl_lang, "header.lbl_lang")
         
+        # Load initial flag image to prevent CustomTkinter layout bugs where configure(image=...) fails
+        flag_name = self.lang_manager.get("flag_icon")
+        if flag_name:
+            icon_path = self.lang_manager.get_asset_path(os.path.join("assets", "icons", flag_name))
+            self.current_flag_img = ctk.CTkImage(
+                light_image=Image.open(icon_path),
+                size=(16, 16)
+            )
+        else:
+            self.current_flag_img = None
+
         self.btn_language = ctk.CTkButton(
             lang_frame,
             text="",
-            image=self.img_flag_en,
+            image=self.current_flag_img,
             command=self.toggle_language,
             width=30,
             height=24,
@@ -187,10 +195,21 @@ class UnifiedSimulatorApp(ctk.CTk):
     def toggle_language(self):
         if self.language_var.get() == "english":
             self.language_var.set("swedish")
-            self.btn_language.configure(image=self.img_flag_sv)
+            self.lang_manager.load_language("swedish")
         else:
             self.language_var.set("english")
-            self.btn_language.configure(image=self.img_flag_en)
+            self.lang_manager.load_language("english")
+        self.update_flag_button()
+
+    def update_flag_button(self):
+        flag_name = self.lang_manager.get("flag_icon")
+        if flag_name:
+            icon_path = self.lang_manager.get_asset_path(os.path.join("assets", "icons", flag_name))
+            self.current_flag_img = ctk.CTkImage(
+                light_image=Image.open(icon_path),
+                size=(16, 16)
+            )
+            self.btn_language.configure(image=self.current_flag_img)
 
     def on_theme_change(self, choice: str):
         ctk.set_appearance_mode(choice.lower())
