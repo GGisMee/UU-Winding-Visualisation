@@ -2,6 +2,7 @@ import os
 import customtkinter as ctk
 import numpy as np
 import tkinter as tk
+from PIL import Image
 from .console import ConsolePanel
 from .canvas import CADCanvas
 from .analytics import AnalyticsPanel
@@ -40,6 +41,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.grid_columnconfigure(0, weight=1)
 
         # --- STATE INITIALIZATION ---
+        self.language_var = ctk.StringVar(value="english")
         self.geometry_state = Geometry()
         self.winding_state = Winding()
         self.magnet= Magnet()
@@ -108,10 +110,23 @@ class UnifiedSimulatorApp(ctk.CTk):
         right_header = ctk.CTkFrame(self.header_frame, fg_color="transparent")
         right_header.grid(row=0, column=1, sticky="e", padx=15, pady=10)
 
+        # Load Flag Images
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        icons_dir = os.path.join(base_dir, "assets", "icons")
+        self.img_flag_en = ctk.CTkImage(
+            light_image=Image.open(os.path.join(icons_dir, "english-flag.png")),
+            size=(16, 16)
+        )
+        self.img_flag_sv = ctk.CTkImage(
+            light_image=Image.open(os.path.join(icons_dir, "swedish-flag.png")),
+            size=(16, 16)
+        )
+
+
         # UI Scaling Dropdown
         scale_frame = ctk.CTkFrame(right_header, fg_color="transparent")
         scale_frame.pack(side="left", padx=(0, 15))
-        ctk.CTkLabel(scale_frame, text="ZOOM", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value).pack(anchor="w")
+        ctk.CTkLabel(scale_frame, text="ZOOM", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12).pack(anchor="center", pady=(0, 4))
         self.scale_menu = ctk.CTkOptionMenu(
             scale_frame,
             values=["75%", "100%", "125%", "150%", "200%", "250%", "300%"],
@@ -124,7 +139,7 @@ class UnifiedSimulatorApp(ctk.CTk):
             height=24,
             font=Theme.fonts.MUTED
         )
-        self.scale_menu.pack(anchor="w")
+        self.scale_menu.pack(anchor="center")
         
         # Determine initial selection based on self.scale_factor
         pct = int(self.scale_factor * 100)
@@ -134,7 +149,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         # Theme Selector Dropdown
         theme_frame = ctk.CTkFrame(right_header, fg_color="transparent")
         theme_frame.pack(side="left", padx=(0, 15))
-        ctk.CTkLabel(theme_frame, text="THEME", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value).pack(anchor="w")
+        ctk.CTkLabel(theme_frame, text="THEME", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12).pack(anchor="center", pady=(0, 4))
         self.theme_menu = ctk.CTkOptionMenu(
             theme_frame,
             values=["Dark", "Light", "System"],
@@ -147,8 +162,35 @@ class UnifiedSimulatorApp(ctk.CTk):
             height=24,
             font=Theme.fonts.MUTED
         )
-        self.theme_menu.pack(anchor="w")
+        self.theme_menu.pack(anchor="center")
         self.theme_menu.set("System")
+
+
+
+        # Language Toggle
+        lang_frame = ctk.CTkFrame(right_header, fg_color="transparent")
+        lang_frame.pack(side="left", padx=(0, 15))
+        ctk.CTkLabel(lang_frame, text="LANG", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=12).pack(anchor="center", pady=(0, 4))
+        
+        self.btn_language = ctk.CTkButton(
+            lang_frame,
+            text="",
+            image=self.img_flag_en,
+            command=self.toggle_language,
+            width=30,
+            height=24,
+            fg_color=Theme.BG_INPUT.value,
+            hover_color=Theme.BUTTON_HOVER.value,
+        )
+        self.btn_language.pack(anchor="center")
+
+    def toggle_language(self):
+        if self.language_var.get() == "english":
+            self.language_var.set("swedish")
+            self.btn_language.configure(image=self.img_flag_sv)
+        else:
+            self.language_var.set("english")
+            self.btn_language.configure(image=self.img_flag_en)
 
     def on_theme_change(self, choice: str):
         ctk.set_appearance_mode(choice.lower())
