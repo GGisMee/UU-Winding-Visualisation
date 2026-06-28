@@ -133,7 +133,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.slider_poles.pack(fill="x", pady=10)
 
         self.slider_positions = LabeledSlider(
-            self.settings_frame, "Positions: {value:.0f}", self.var_positions, 1, 10, 4, self.on_change_positions,
+            self.settings_frame, "Positions: {value:.0f}", self.var_positions, 1, 10, 9, self.on_change_positions,
             tooltip_text="The number of winding positions (layers) per slot."
         )
         self.slider_positions.pack(fill="x", pady=10)

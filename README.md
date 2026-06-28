@@ -38,7 +38,7 @@ graph TD
 
 ### 1. Domain Models (`src/winding/models/simulation.py`)
 * **`Geometry`**: Represents the physical dimensions of the generator (inner diameter, height, airgap, permanent magnet thickness).
-* **`Winding`**: Contains the winding configuration, slots, poles, phases, and fill factors.
+* **`Winding`**: Contains the winding configuration, slots, positions, poles, phases, and fill factors.
 * **`Material`**: Magnetic material properties (remanence and coercivity).
 * **`OperatingState`**: Current runtime parameters (RPM and noise factor).
 * **`Generator`**: Aggregates the models and calculates fundamental properties (e.g., electrical frequency, airgap velocity, induced voltage).

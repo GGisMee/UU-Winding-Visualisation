@@ -67,7 +67,7 @@ class Winding:
         """
         assert self.poles % 2 == 0, f"poles must be an even number, got {self.poles}"
         if self.winding_matrix is None:
-            if self.poles == 4 and self.slots == 38: # Boot up example
+            if self.positions == 4 and self.slots == 38: # Boot up example
                 self.winding_matrix = np.array([
                     [ 1,  1,  1, -3, -3,  2,  2,  2, -1, -1,  3,  3,  3, -2, -2,  1,  1,  1, -3, -3,  5,  5,  2, -1, -1,  3,  3,  3, -5, -2,  3,  3,  4, -2, -2,  1, -4,  1],
                     [ 1,  1,  1, -3, -3,  2,  2,  2, -1, -1,  3,  3,  3, -2, -2,  1,  1,  1, -3, -3,  5,  5,  2, -1, -1,  3,  3,  3, -5, -5,  3,  3,  4, -2, -2,  1, -4,  1],
