@@ -49,12 +49,13 @@ class Winding:
         Stator factor filled by copper [-].
     rotor_fill : float
         Fraction of rotor filled by permanent magnet [-].
-    winding_matrix : np.ndarray of shape (poles, slots)
+    winding_matrix : np.ndarray of shape (positions, slots)
         Matrix containing the winding layout.
     """
     poles: int = 4
     phases: int = 5
     slots: int = 38
+    positions: int = 4
     stator_fill: float = 0.5
     rotor_fill: float = 0.5
 
@@ -74,19 +75,19 @@ class Winding:
                     [ 1,  1, -3, -3, -3,  2,  2, -1, -1, -1,  3,  3, -2, -2, -2,  1,  1, -3, -3, -3,  5,  5, -1, -1, -1,  3,  3, -2, -5, -5,  3,  3,  4, -2, -2,  1, -4, -3]
                 ])
             else:
-                self.winding_matrix = np.zeros((self.poles, self.slots), dtype=int)
+                self.winding_matrix = np.zeros((self.positions, self.slots), dtype=int)
 
     def resize_matrix(self):
         """
-        Resizes winding_matrix to match (poles, slots), padding with zeros or truncating.
+        Resizes winding_matrix to match (positions, slots), padding with zeros or truncating.
         """
-        old_poles, old_slots = self.winding_matrix.shape
-        new_matrix = np.zeros((self.poles, self.slots), dtype=int)
+        old_positions, old_slots = self.winding_matrix.shape
+        new_matrix = np.zeros((self.positions, self.slots), dtype=int)
         
-        copy_poles = min(self.poles, old_poles)
+        copy_positions = min(self.positions, old_positions)
         copy_slots = min(self.slots, old_slots)
         
-        new_matrix[:copy_poles, :copy_slots] = self.winding_matrix[:copy_poles, :copy_slots]
+        new_matrix[:copy_positions, :copy_slots] = self.winding_matrix[:copy_positions, :copy_slots]
         self.winding_matrix = new_matrix
 
         # Ensure no winding phase is higher than the available phases
@@ -160,7 +161,7 @@ class Generator:
     @property
     def v_airgap(self) -> float:
         """Linear velocity in the airgap based on rotor RPM and diameter [m/s]."""
-        return 2 * np.pi * self.geom.inner_diameter * self.state.RPM / 60
+        return np.pi * self.geom.inner_diameter * self.state.RPM / 60
 
     # -- 2. Spår & Lindningar --
     @property
@@ -228,7 +229,7 @@ class SimulateGenerator:
         ----------
         phases : int
             Number of electrical phases.
-        winding_matrix : np.ndarray of shape (poles, slots)
+        winding_matrix : np.ndarray of shape (positions, slots)
             Winding matrix.
 
         Returns
@@ -254,7 +255,7 @@ class SimulateGenerator:
         ----------
         phases : int
             Number of electrical phases.
-        winding_matrix : np.ndarray of shape (poles, slots)
+        winding_matrix : np.ndarray of shape (positions, slots)
             Winding matrix.
 
         Returns
@@ -264,7 +265,7 @@ class SimulateGenerator:
         """
         phases_arr = np.arange(1, phases + 1)
 
-        # Matrix shape: (poles, slots)
+        # Matrix shape: (positions, slots)
         # We want to count the number of up/down windings per phase for each slot
         nb_up = np.sum(winding_matrix[:, :, None] == phases_arr[None, None, :], axis=0).T
         nb_down = np.sum(winding_matrix[:, :, None] == -phases_arr[None, None, :], axis=0).T

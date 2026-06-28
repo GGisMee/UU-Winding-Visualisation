@@ -107,12 +107,14 @@ class ConsolePanel(ctk.CTkFrame):
         # Variables
         init_phases = self.app.winding_state.phases if self.app else 5
         init_poles = self.app.winding_state.poles if self.app else 4
+        init_positions = self.app.winding_state.positions if self.app else 4
         init_slots = self.app.winding_state.slots if self.app else 38
         init_rpm = self.app.operating_state.RPM if self.app else 240
         init_magnet = self.app.generator.magnet.magnet_function.name.replace("_", " ") if self.app else "Smooth Square"
 
         self.var_phases = ctk.DoubleVar(value=init_phases)
         self.var_poles = ctk.DoubleVar(value=init_poles)
+        self.var_positions = ctk.DoubleVar(value=init_positions)
         self.var_slots = ctk.DoubleVar(value=init_slots)
         self.var_rpm = ctk.DoubleVar(value=init_rpm)
         self.var_magnet_type = ctk.StringVar(value=init_magnet)
@@ -129,6 +131,12 @@ class ConsolePanel(ctk.CTkFrame):
             tooltip_text="The number of magnetic poles in the rotor."
         )
         self.slider_poles.pack(fill="x", pady=10)
+
+        self.slider_positions = LabeledSlider(
+            self.settings_frame, "Positions: {value:.0f}", self.var_positions, 1, 10, 4, self.on_change_positions,
+            tooltip_text="The number of winding positions (layers) per slot."
+        )
+        self.slider_positions.pack(fill="x", pady=10)
 
         self.slider_slots = LabeledSlider(
             self.settings_frame, "Slots: {value:.0f}", self.var_slots, 10, 100, 90, self.on_change_slots,
@@ -185,6 +193,12 @@ class ConsolePanel(ctk.CTkFrame):
     def on_change_poles(self, val):
         if self.app:
             self.app.winding_state.poles = int(val)
+            if hasattr(self.app, 'on_inputs_changed'):
+                self.app.on_inputs_changed()
+
+    def on_change_positions(self, val):
+        if self.app:
+            self.app.winding_state.positions = int(val)
             self.app.winding_state.resize_matrix()
             self.app.cad_canvas.update_geometry()
             if hasattr(self.app, 'on_inputs_changed'):
@@ -222,6 +236,7 @@ class ConsolePanel(ctk.CTkFrame):
         state = "normal" if enabled else "disabled"
         self.slider_phases.configure_slider(state=state)
         self.slider_poles.configure_slider(state=state)
+        self.slider_positions.configure_slider(state=state)
         self.slider_slots.configure_slider(state=state)
         self.slider_rpm.configure_slider(state=state)
         self.magnet_menu.configure(state=state)
@@ -233,6 +248,8 @@ class ConsolePanel(ctk.CTkFrame):
             self.slider_phases.update_label()
             self.var_poles.set(self.app.winding_state.poles)
             self.slider_poles.update_label()
+            self.var_positions.set(self.app.winding_state.positions)
+            self.slider_positions.update_label()
             self.var_slots.set(self.app.winding_state.slots)
             self.slider_slots.update_label()
             self.var_rpm.set(self.app.operating_state.RPM)
@@ -260,6 +277,7 @@ class ConsolePanel(ctk.CTkFrame):
         # Update Sliders
         self.slider_phases.update_label_template(self.app.lang_manager.get("console.slider_phases"))
         self.slider_poles.update_label_template(self.app.lang_manager.get("console.slider_poles"))
+        self.slider_positions.update_label_template(self.app.lang_manager.get("console.slider_positions"))
         self.slider_slots.update_label_template(self.app.lang_manager.get("console.slider_slots"))
         self.slider_rpm.update_label_template(self.app.lang_manager.get("console.slider_rpm"))
         

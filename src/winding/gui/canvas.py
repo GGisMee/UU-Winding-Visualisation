@@ -135,7 +135,7 @@ class CADCanvas(ctk.CTkFrame):
         if not hasattr(self, 'grid_start_x'): return
         s = int((x - self.grid_start_x) / self.cell_w)
         p = int((y - self.grid_start_y) / self.cell_h)
-        if 0 <= p < self.poles and 0 <= s < self.slots:
+        if 0 <= p < self.positions and 0 <= s < self.slots:
             target_val = 0 if self.active_phase == 0 else (-self.active_phase if is_right_click else self.active_phase)
             if self.matrix[p, s] != target_val:
                 self.matrix[p, s] = target_val
@@ -173,12 +173,12 @@ class CADCanvas(ctk.CTkFrame):
     def draw_windings_mockup(self, w, h):
         if self.app:
             self.matrix = self.app.winding_state.winding_matrix
-            self.poles = self.app.winding_state.poles
+            self.positions = self.app.winding_state.positions
             self.slots = self.app.winding_state.slots
             self.phases = self.app.winding_state.phases
         else:
             import numpy as np
-            self.poles = 4
+            self.positions = 4
             self.slots = 38
             self.phases = 5
             self.matrix = np.array([
@@ -224,13 +224,13 @@ class CADCanvas(ctk.CTkFrame):
             return
 
         cell_w = available_w / self.slots
-        cell_h = available_h / self.poles
+        cell_h = available_h / self.positions
 
         cell_h = min(cell_h, 80 * self.scale_factor)
         cell_w = min(cell_w, 40 * self.scale_factor)
 
         grid_w = cell_w * self.slots
-        grid_h = cell_h * self.poles
+        grid_h = cell_h * self.positions
 
         start_x = (w - grid_w) / 2
         start_y = 60 * self.scale_factor + (h - 60 * self.scale_factor - grid_h - 30 * self.scale_factor) / 2
@@ -240,7 +240,7 @@ class CADCanvas(ctk.CTkFrame):
         self.cell_w = cell_w
         self.cell_h = cell_h
 
-        for p in range(self.poles):
+        for p in range(self.positions):
             self.canvas.create_text(
                 start_x - 15 * self.scale_factor,
                 start_y + p * cell_h + cell_h / 2,

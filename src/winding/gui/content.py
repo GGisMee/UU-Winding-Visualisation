@@ -1,9 +1,9 @@
 WINDING_GUIDE_TEXT = """The Winding Layout allows you to define the physical arrangement of the stator windings within the generator. This layout is represented as a matrix where you map electrical phases to specific slots and poles.
 
 ## The Winding Matrix
-• Columns (Poles): Each column represents a magnetic pole of the rotor.
-• Rows (Slots): Each row represents a physical slot in the stator.
-• Cells: Each cell defines which electrical phase is placed in that specific slot for that specific pole, and its winding direction.
+• Columns (Slots): Each column represents a physical slot in the stator.
+• Rows (Positions): Each row represents a winding position or layer within a slot.
+• Cells: Each cell defines which electrical phase is placed in that specific position and slot, and its winding direction.
 
 ## How to Configure
 1. Select Phase: Use the number keys (1-9) on your keyboard to select the active phase. The current active phase determines which phase will be assigned when you click.
