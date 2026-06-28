@@ -61,3 +61,13 @@ overtones = "Övertoner"
 Dark = "Mörk"
 Light = "Ljus"
 System = "System"
+
+[tooltips]
+app_title = "Konfigurera under Inställningar, linda generatorn i Lindningslayout, simulera och granska resultaten under Översikt och Övertoner."
+canvas_title = "Lindningslayout: Ändra fas och riktning för lindningen i varje spår och position för att linda generatorn.\n\nVänsterklicka för positiv polaritet, högerklicka för negativ. Använd siffertangenterna för att byta aktiv fas."
+phases = "Antalet elektriska faser (t.ex. 3-fas eller 5-fas)."
+poles = "Antalet magnetiska poler i rotorn."
+positions = "Antalet lindningspositioner (lager) per spår."
+slots = "Antalet spår i statorn."
+rpm = "Generatorns rotationshastighet i varv per minut (RPM)."
+magnet = "Magnetfältets form."

@@ -23,8 +23,9 @@ class LabeledSlider(ctk.CTkFrame):
         )
         self.label.pack(anchor="w", padx=0, pady=(2, 0))
         
+        self.tooltip = None
         if tooltip_text:
-            ToolTip(self.label, tooltip_text, small=True)
+            self.tooltip = ToolTip(self.label, tooltip_text, small=True)
         
         # Slider
         self.slider = ctk.CTkSlider(
@@ -55,6 +56,10 @@ class LabeledSlider(ctk.CTkFrame):
 
     def configure_slider(self, **kwargs):
         self.slider.configure(**kwargs)
+        
+    def update_tooltip(self, new_text: str):
+        if self.tooltip:
+            self.tooltip.update_text(new_text)
 
 
 class MetricRow(ctk.CTkFrame):
@@ -198,6 +203,9 @@ class ToolTip:
         self.widget.bind("<Leave>", self.leave)
         self.widget.bind("<Motion>", self.motion)
         self.widget.bind("<ButtonPress>", self.leave)
+
+    def update_text(self, new_text: str):
+        self.text = new_text
 
     def enter(self, event=None):
         if event:

@@ -153,7 +153,7 @@ class ConsolePanel(ctk.CTkFrame):
         # --- Magnet Function ---
         self.lbl_magnet = ctk.CTkLabel(self.settings_frame, text="Magnet Function", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
         self.lbl_magnet.pack(anchor="w", pady=(10, 5))
-        ToolTip(self.lbl_magnet, "The shape of the magnetic field.", small=True)
+        self.tooltip_magnet = ToolTip(self.lbl_magnet, "The shape of the magnetic field.", small=True)
         self.magnet_menu = ctk.CTkOptionMenu(
             self.settings_frame,
             values=["Smooth Square", "Sharp Square", "Rounded Triangle"],
@@ -286,3 +286,12 @@ class ConsolePanel(ctk.CTkFrame):
         self.magnet_menu.configure(values=list(magnet_types.values()))
         current_eng = self.app.generator.magnet.magnet_function.name.replace("_", " ")
         self.var_magnet_type.set(magnet_types.get(current_eng, current_eng))
+        
+        # Update Tooltips
+        self.slider_phases.update_tooltip(self.app.lang_manager.get("tooltips.phases", "The number of electrical phases (e.g. 3-phase or 5-phase)."))
+        self.slider_poles.update_tooltip(self.app.lang_manager.get("tooltips.poles", "The number of magnetic poles in the rotor."))
+        self.slider_positions.update_tooltip(self.app.lang_manager.get("tooltips.positions", "The number of winding positions (layers) per slot."))
+        self.slider_slots.update_tooltip(self.app.lang_manager.get("tooltips.slots", "The number of slots in the stator."))
+        self.slider_rpm.update_tooltip(self.app.lang_manager.get("tooltips.rpm", "The rotational speed of the generator in revolutions per minute."))
+        if hasattr(self, 'tooltip_magnet'):
+            self.tooltip_magnet.update_text(self.app.lang_manager.get("tooltips.magnet", "The shape of the magnetic field."))

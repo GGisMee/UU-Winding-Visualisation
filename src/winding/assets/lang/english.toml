@@ -61,3 +61,13 @@ overtones = "Overtones"
 Dark = "Dark"
 Light = "Light"
 System = "System"
+
+[tooltips]
+app_title = "Configure in Settings, Wind the generator in Winding Layout, Simulate and view results in Overview and Overtones."
+canvas_title = "Winding Layout: Change the phase and direction of the winding for each slot and position to wind the generator.\n\nLeft-click to assign positive polarity, right-click to assign negative polarity. Use number keys to select the active phase."
+phases = "The number of electrical phases (e.g. 3-phase or 5-phase)."
+poles = "The number of magnetic poles in the rotor."
+positions = "The number of winding positions (layers) per slot."
+slots = "The number of slots in the stator."
+rpm = "The rotational speed of the generator in revolutions per minute."
+magnet = "The shape of the magnetic field."

@@ -105,7 +105,8 @@ class UnifiedSimulatorApp(ctk.CTk):
         )
         self.lbl_title.pack(anchor="w", pady=(2, 0))
 
-        ToolTip(self.lbl_title, text="Configure in Settings, Wind the generator in Winding Layout, Simulate and view results in Overview and Overtones.")
+        tooltip_msg = self.lang_manager.get("tooltips.app_title", "Configure in Settings, Wind the generator in Winding Layout, Simulate and view results in Overview and Overtones.")
+        self.tooltip_title = ToolTip(self.lbl_title, text=tooltip_msg)
 
         
 
@@ -217,6 +218,10 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.lbl_zoom.configure(text=self.lang_manager.get("header.lbl_zoom"))
         self.lbl_theme.configure(text=self.lang_manager.get("header.lbl_theme"))
         self.lbl_lang.configure(text=self.lang_manager.get("header.lbl_lang"))
+        
+        if hasattr(self, 'tooltip_title'):
+            self.tooltip_title.update_text(self.lang_manager.get("tooltips.app_title", "Configure in Settings, Wind the generator in Winding Layout, Simulate and view results in Overview and Overtones."))
+            
         
         # Update Theme Dropdown Option values
         themes = self.lang_manager.get("themes", {})

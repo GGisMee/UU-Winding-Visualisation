@@ -27,8 +27,8 @@ class CADCanvas(ctk.CTkFrame):
             text_color=Theme.TEXT_MAIN.value
         )
         self.lbl_title.pack(side="left")
-        
-        ToolTip(self.lbl_title, "Winding Layout: Change the phase and direction of the winding for each slot and pole to wind the generator.\n\nLeft-click to assign positive polarity, right-click to assign negative polarity. Use number keys to select the active phase.", small=True)
+        tooltip_msg = self.app.lang_manager.get("tooltips.canvas_title", "Winding Layout: Change the phase and direction of the winding for each slot and position to wind the generator.\n\nLeft-click to assign positive polarity, right-click to assign negative polarity. Use number keys to select the active phase.") if self.app else ""
+        self.tooltip_title = ToolTip(self.lbl_title, tooltip_msg, small=True)
 
         self.btn_toggle_guide = ctk.CTkButton(
             self.title_frame,
@@ -320,4 +320,7 @@ class CADCanvas(ctk.CTkFrame):
         if not self.app:
             return
         self.lbl_title.configure(text=self.app.lang_manager.get("canvas.title"))
+        if hasattr(self, 'tooltip_title'):
+            tooltip_msg = self.app.lang_manager.get("tooltips.canvas_title", "Winding Layout: Change the phase and direction of the winding for each slot and position to wind the generator.\n\nLeft-click to assign positive polarity, right-click to assign negative polarity. Use number keys to select the active phase.")
+            self.tooltip_title.update_text(tooltip_msg)
         self.update_geometry()
