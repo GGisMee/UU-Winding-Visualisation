@@ -114,6 +114,7 @@ pip --version
 4. **Install requirements:**
    ```powershell
    pip install -r requirements.txt
+   pip install -e .
    ```
 
 5. **Run the application:**
@@ -136,6 +137,7 @@ pip --version
 3. **Install requirements:**
    ```bash
    pip install -r requirements.txt
+   pip install -e .
    ```
 
 4. **Run the application:**
