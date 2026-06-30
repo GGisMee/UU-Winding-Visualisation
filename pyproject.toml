@@ -3,7 +3,7 @@ name = "winding"
 version = "0.1.0"
 description = "generator winding visualiser"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
     "customtkinter>=5.2.2",
     "matplotlib>=3.11.0",

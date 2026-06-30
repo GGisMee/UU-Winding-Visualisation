@@ -6,6 +6,9 @@ import shutil
 import sys
 import glob
 
+# Dynamisk separator (; på Windows, : på Linux)
+sep = os.pathsep
+
 # Get path to customtkinter to include its assets (themes, fonts, etc.)
 customtkinter_path = os.path.dirname(customtkinter.__file__)
 
@@ -36,6 +39,7 @@ for root, dirs, files in os.walk("src/winding"):
 
 # Add critical third-party and standard library dependencies that PyInstaller misses
 hidden_imports.extend([
+    '--hidden-import', 'tomllib',  
     '--hidden-import', 'customtkinter',
     '--hidden-import', 'tkinter',
     '--hidden-import', 'matplotlib',
@@ -50,17 +54,13 @@ pyinstaller_args = [
     'obfuscated_src/winding/main.py',
     '--name=WindingSimulator',
     '--onefile',
-    '--windowed',  # Prevent console window from appearing on Windows
-    f'--add-data={customtkinter_path}:customtkinter',  # Include CTk assets
-    '--add-data=obfuscated_src/winding/assets:winding/assets',
+    '--windowed',
+    f'--add-data={customtkinter_path}{sep}customtkinter',  # Använder sep här
+    f'--add-data=obfuscated_src/winding/assets{sep}assets',
     '--paths=obfuscated_src',
     f'--hidden-import={runtime_pkg}',
     '--clean',
 ] + hidden_imports
-
-# Fix path separator for Windows vs Linux/Mac
-if sys.platform == 'win32':
-    pyinstaller_args = [arg.replace(':', ';') if arg.startswith('--add-data') else arg for arg in pyinstaller_args]
 
 PyInstaller.__main__.run(pyinstaller_args)
 
