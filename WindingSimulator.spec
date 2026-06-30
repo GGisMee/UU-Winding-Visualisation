@@ -2,11 +2,11 @@
 
 
 a = Analysis(
-    ['obfuscated_src\\winding\\main.py'],
+    ['obfuscated_src/winding/main.py'],
     pathex=['obfuscated_src'],
     binaries=[],
-    datas=[('C:\\Users\\gusta\\Desktop\\UU-Winding-Visualisation\\.venv\\Lib\\site-packages\\customtkinter', 'customtkinter'), ('obfuscated_src/winding/assets', 'assets')],
-    hiddenimports=['pyarmor_runtime_000000', 'winding.config', 'winding.main', 'winding.gui.analytics', 'winding.gui.app', 'winding.gui.canvas', 'winding.gui.components', 'winding.gui.console', 'winding.gui.content', 'winding.gui.language', 'winding.gui.theme', 'winding.models.export', 'winding.models.magnets', 'winding.models.simulation', 'winding.snippets.magnet_functions', 'tomllib', 'customtkinter', 'tkinter', 'tkinter.filedialog', 'matplotlib', 'matplotlib.figure', 'matplotlib.backends.backend_tkagg', 'matplotlib.backends.backend_pdf', 'matplotlib.image', 'matplotlib.pyplot', 'numpy', 'tomli_w', 'PIL', 'PIL.Image', 'zipfile', 'tempfile', 'csv', 'textwrap', 'io', 'datetime', 'pathlib', 'traceback'],
+    datas=[('/home/gustavg/Projects/uu_winding/.venv/lib/python3.14/site-packages/customtkinter', 'customtkinter'), ('obfuscated_src/winding/assets', 'assets')],
+    hiddenimports=['pyarmor_runtime_000000', 'winding.main', 'winding.config', 'winding.gui.theme', 'winding.gui.analytics', 'winding.gui.app', 'winding.gui.console', 'winding.gui.components', 'winding.gui.language', 'winding.gui.canvas', 'winding.gui.content', 'winding.models.simulation', 'winding.models.magnets', 'winding.models.export', 'winding.snippets.magnet_functions', 'tomllib', 'customtkinter', 'tkinter', 'tkinter.filedialog', 'matplotlib', 'matplotlib.figure', 'matplotlib.backends.backend_tkagg', 'matplotlib.backends.backend_pdf', 'matplotlib.image', 'matplotlib.pyplot', 'numpy', 'tomli_w', 'PIL', 'PIL.Image', 'PIL._tkinter_finder', 'zipfile', 'tempfile', 'csv', 'textwrap', 'io', 'datetime', 'pathlib', 'traceback'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

@@ -53,6 +53,7 @@ hidden_imports.extend([
     '--hidden-import', 'tomli_w',
     '--hidden-import', 'PIL',
     '--hidden-import', 'PIL.Image',
+    '--hidden-import', 'PIL._tkinter_finder',
     '--hidden-import', 'zipfile',
     '--hidden-import', 'tempfile',
     '--hidden-import', 'csv',
