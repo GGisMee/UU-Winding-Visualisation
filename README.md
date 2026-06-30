@@ -1,51 +1,36 @@
-# Generator Winding Visualiser
+# Generator Winding Simulator
 
-A modular and educational CustomTkinter application for the simulation, dimensioning, and analysis of electrical generator windings. The tool is designed to teach fundamental electromagnetic, geometric, and electrical principles in generator design through interactive visualisations and real-time signal analysis.
+A modular and educational CustomTkinter application for the simulation, configuration, and analysis of electrical generator windings. The tool is designed to teach students fundamental principles in electrical machine design, phase generation, and harmonic (overtone) analysis through interactive visualization.
 
 ---
 
 ## Architecture & Data Flow
 
-The system is built using **Domain-Driven Design (DDD)** principles to separate data from calculation logic and the user interface. This structure prevents code duplication and simplifies automated testing.
+The system is built using principles to separate data from calculation logic and the user interface. This structure prevents code duplication and allows for robust real-time updates.
 
 ```mermaid
 graph TD
-    User[User Input] -->|Modifies settings| Geom[Geometry]
-    Config[Configuration file] -->|Modifies settings| Wind[Winding]
-    Config -->|Modifies settings| Mat[Material]
-    Config -->|Modifies settings| State[OperatingState]
+    User[User Input] -->|Modifies configuration| Config[Generator / Winding Setup]
     
-    Geom -->|Inputs| Gen[Generator]
-    Wind -->|Inputs| Gen
-    Mat -->|Inputs| Gen
-    State -->|Inputs| Gen
+    Config -->|Inputs| Engine[Simulation Engine]
     
-    Gen -->|Inputs| Sim[SimulateGenerator]
+    Engine -->|Delegates| PS[Phase Calculation]
+    Engine -->|Delegates| HS[Harmonic / Overtone Analysis]
     
-    Sim -->|Returns Phase Voltages| Post[PostProcess]
-    Sim -->|Phase Voltages| GUI[AnalyticsPanel]
+    PS -->|Returns Phase Voltages| Engine
+    HS -->|Returns THD & Harmonics| Engine
     
-    Post -->|Returns Harmonics & THD| GUI
+    Engine -->|Aggregates| Result[Simulation Result]
     
-    Gen -->|Evaluate geometric layout| CAD[CADCanvas]
+    Result -->|Send results to UI| GUI[AnalyticsPanel & GUI]
 ```
 
 ### Detailed Data Flow
-1. **User Input:** The user configures the physical dimensions (`Geometry`), winding layout (`Winding`), magnetic properties (`Material`), and operation state (`OperatingState`) via the UI.
-2. **Simulation Dispatch:** The `Generator` class aggregates the inputs and provides mechanical and electrical properties. `SimulateGenerator` receives the `Generator` model and calculates the induced phase voltages over time.
-3. **Post Processing:** The `PostProcess` class analyzes the generated signals, running FFT (Fast Fourier Transform) to extract harmonics and computing Total Harmonic Distortion (THD).
-4. **UI Rendering:** The phase voltages and harmonic spectrums are mapped directly to Matplotlib charts. The physical winding layout is drawn in the interactive CAD canvas.
-
-### 1. Domain Models (`src/winding/models/simulation.py`)
-* **`Geometry`**: Represents the physical dimensions of the generator (inner diameter, height, airgap, permanent magnet thickness).
-* **`Winding`**: Contains the winding configuration, slots, positions, poles, phases, and fill factors.
-* **`Material`**: Magnetic material properties (remanence and coercivity).
-* **`OperatingState`**: Current runtime parameters (RPM and noise factor).
-* **`Generator`**: Aggregates the models and calculates fundamental properties (e.g., electrical frequency, airgap velocity, induced voltage).
-
-### 2. Calculation Engine & Services (`src/winding/models/simulation.py`)
-* **`SimulateGenerator`**: Handles the time-domain simulation. Computes net windings per slot, magnetic field patterns, applies noise, and calculates the induced phase voltages over time.
-* **`PostProcess`**: Handles frequency-domain analysis. Computes the Fast Fourier Transform (FFT) of the phase voltages to identify harmonics and calculate the Total Harmonic Distortion (THD).
+1. **User Input:** The user configures the generator dimensions, magnet setup, RPM, and the physical winding matrix across slots and phases.
+2. **Simulation Dispatch:** The simulation engine processes the winding configuration by applying Faraday's law of induction.
+3. **Analytics:** The system computes the fundamental frequency, peak voltages per phase, and breaks down overtones (Total Harmonic Distortion - THD).
+4. **UI Rendering:** The results are mapped directly to Matplotlib charts (Phase Voltages), tabulated summaries, and the interactive UI components.
+5. **Exporting:** Results, charts, and the winding matrix can be exported to CSV, TOML, and PDF reports.
 
 ---
 
@@ -55,71 +40,63 @@ The project code is organized inside `src/winding/` as follows:
 
 ```text
 uu_winding/
-├── pyproject.toml              # Dependency management and project configuration (uv/pip)
 ├── README.md                   # This documentation file
+├── build.py                    # Build script for PyInstaller obfuscation
 └── src/
     └── winding/
         ├── main.py                 # Application entry point
+        ├── config.py               # Central physical and UI constants
+        │
         ├── models/                 # --- DOMAIN & CALCULATION MODELS ---
-        │   ├── simulation.py       # Domain models, simulation engine, and post-processing
-        │   └── t.py                # Scratchpad / utility script
+        │   ├── generator.py        # Generator state and core abstractions
+        │   ├── simulation.py       # Math engine for calculating voltages and phase properties
+        │   └── export.py           # Logic for PDF, CSV, and TOML generation
+        │
         ├── gui/                    # --- CUSTOMTKINTER LAYOUT (MVC) ---
-        │   ├── app.py              # Central controller app (coordinates state, callbacks)
-        │   ├── console.py          # Left panel (sliders for geometry, winding, and operating state)
-        │   ├── canvas.py           # Center panel (interactive blueprint of the generator)
-        │   ├── analytics.py        # Right panel (Matplotlib charts for phase voltages and spectrum)
+        │   ├── app.py              # Central controller app 
         │   ├── components.py       # Reusable custom widgets
-        │   └── theme.py            # Styling themes and font parameters
+        │   ├── analytics.py        # Analytics panel with charts and tables
+        │   ├── language.py         # i18n Translation manager (English/Swedish)
+        │   └── theme.py            # Styling themes and UI colors
+        │
+        └── assets/                 # External assets (icons, localization TOMLs)
 ```
 
 ---
 
 ## Interface Structure (UI)
 
-The UI is divided into a three-panel workspace in CustomTkinter using an **Event-Driven UI** pattern where panels are decoupled and communicate through the main controller (`app.py`):
+The UI is divided into panels managed by the main application controller (`app.py`):
 
-1. **Left Panel (`ConsolePanel` / `console.py`)**:
-   * Adjusts physical and operational parameters (Geometry, Winding, Material, and State) using interactive inputs and sliders.
-2. **Center Panel (`CADCanvas` / `canvas.py`)**:
-   * Renders a live CAD-style blueprint of the generator and its winding configuration.
-3. **Right Panel (`AnalyticsPanel` / `analytics.py`)**:
-   * Displays a warning bar when inputs have changed to prompt a simulation rerun.
-   * Houses the "Simulate" button.
-   * **Phase Voltages Chart**: Plots the simulated time-domain phase voltages of the generator, including noise and the sum of all phases.
-   * **Spectrum Chart**: Displays the frequency-domain amplitude spectrum (FFT) to visualize fundamental frequencies and harmonics.
-
----
-
-## Improvements
-Things not yet implemented, which could benefit the program.
-
-### Improve simulation models
-* Refine the magnetic field modeling (`magnet` function) for more accurate physical representation.
-* Add more metrics in the results
-* Add a more realistic way of visualizing the windings
-### User Experience (UI) & Features
-* **Exporting:** Allow users to export the simulation data (voltages and THD) to a CSV file or report.
-* **Save/Load:** Implement local storage so users can save a specific generator configuration and load it later.
+1. **Configuration Panel**:
+   * Adjust generator settings like RPM, Poles, Slots, and Phases.
+   * Input the interactive **Winding Matrix** representing positive and negative phase coils in different slots.
+2. **Analytics & Results Panel**:
+   * **Phase Voltages Over Time**: Matplotlib plot showcasing the resulting sine waves.
+   * **Windings Breakdown**: Table detailing total up and down windings per phase.
+   * **Harmonics Table**: Breakdown of 1st, 3rd, 5th, and 7th harmonics, alongside the Total Harmonic Distortion (THD) and averages.
+3. **Export Features**:
+   * One-click "Export" to generate a `.zip` archive containing `report.pdf`, `winding_matrix.csv`, phase data, and `results.toml`.
 
 ---
 
 ## Installation and Use
 
 ### Installing Python
-To use the app and work with it, you need to firstly have installed python. 
-* On Mac write `brew install python`. 
-* On Windows go to python.org and download python `.exe` file. 
+To use the app and work with it, you need to first install Python. 
+* On macOS write `brew install python`. 
+* On Windows go to python.org and download the Python `.exe` file. 
 	* Remember to click the **Add python.exe to PATH** button.
 
-**Test results with:**
-```
+**Test installation with:**
+```bash
 python --version
 pip --version
 ```
 
 ### Windows
 
-1. **Create virtual environment:**
+1. **Create virtual environment (For holding packages):**
    ```powershell
    py -m venv .venv 
    ```
@@ -134,15 +111,13 @@ pip --version
    .venv\Scripts\Activate.ps1
    ```
 
-4. **Install requirements and package:**
+4. **Install requirements:**
    ```powershell
-   pip install -e .
+   pip install -r requirements.txt
    ```
 
 5. **Run the application:**
    ```powershell
-   winding
-   # or
    python src\winding\main.py
    ```
 
@@ -158,24 +133,22 @@ pip --version
    source .venv/bin/activate
    ```
 
-3. **Install requirements and package:**
+3. **Install requirements:**
    ```bash
-   pip install -e .
+   pip install -r requirements.txt
    ```
 
 4. **Run the application:**
    ```bash
-   winding
-   # or
    python src/winding/main.py
    ```
 
 ### Dependencies
 
-These packages are used with Python:
-* **numpy** (For mathematical calculations)
-* **customtkinter** (For GUI)
-* **matplotlib** (For plotting datapoints)
+Key packages used:
+* **numpy** / **scipy** (Mathematical and matrix calculations)
+* **customtkinter** (Modern GUI toolkit)
+* **matplotlib** (Data visualization)
 
 ---
 
@@ -183,14 +156,17 @@ These packages are used with Python:
 
 To package the application into a standalone executable that can run on computers without Python installed, use [PyInstaller](https://pyinstaller.org/).
 
-First, install PyInstaller in your virtual environment:
+**Important:** To get the binaries required for each operating system, the build command must be run on that specific operating system (Windows for `.exe`, macOS for `.app`, Linux for binary).
+
+First, install PyInstaller and PyArmor in your virtual environment:
 ```bash
-pip install pyinstaller
+pip install pyinstaller pyarmor
 ```
 
-Run this command from the project root to build the executable:
+To build, simply run the included `build.py` script from the project root. This script will automatically obfuscate the code using PyArmor, bundle required assets, and package it using PyInstaller into a standalone executable.
+
 ```bash
-pyinstaller --name "WindingVisualiser" --windowed src/winding/main.py
+python build.py
 ```
 
-The executable will be located in the `dist/WindingVisualiser/` directory.
+The executable will be located in the `dist/` directory.
