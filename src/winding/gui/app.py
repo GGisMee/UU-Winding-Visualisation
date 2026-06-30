@@ -338,6 +338,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         import datetime
         now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         saver.toml.append("info.run_time", now_str)
+        saver.toml.append("info.winding_matrix_explanation", "Positive numbers (e.g., +1) mean positive polarity for that phase (up). Negative numbers (e.g., -1) mean negative polarity (down). 0 means empty.")
 
         # 1. TOML
         saver.toml.append("generator.phases", self.generator.wind.phases)
@@ -346,6 +347,13 @@ class UnifiedSimulatorApp(ctk.CTk):
         saver.toml.append("generator.positions", self.generator.wind.positions)
         saver.toml.append("generator.rpm", self.generator.state.RPM)
         saver.toml.append("generator.magnet_function", self.generator.magnet.magnet_function.name)
+
+        total, up, down = SimulateGenerator.get_total_windings_per_phase(self.generator.wind.phases, self.generator.wind.winding_matrix)
+        saver.toml.append("results.total_up_windings", int(up.sum()))
+        saver.toml.append("results.total_down_windings", int(down.sum()))
+        
+        if hasattr(self.analytics, 'avg_thd'):
+            saver.toml.append("results.mean_thd", float(self.analytics.avg_thd))
 
         # 2. CSV - Phase and Overtone tables from Analytics Panel
         if hasattr(self.analytics, 'windings_table_data'):
@@ -358,8 +366,21 @@ class UnifiedSimulatorApp(ctk.CTk):
             if overtones_data["rows"]:
                 saver.csv.append(headers=overtones_data["headers"], rows=overtones_data["rows"], filename="overtone_table.csv")
 
+        # 3. Winding Matrix CSV
+        slots = self.generator.wind.slots
+        positions = self.generator.wind.positions
+        wm = self.generator.wind.winding_matrix
+        
+        wm_headers = ["Position \\ Slot"] + [f"Slot {i+1}" for i in range(slots)]
+        wm_rows = []
+        for j in range(positions):
+            wm_rows.append([f"Position {j+1}"] + wm[j, :].tolist())
+            
+        saver.csv.append(headers=wm_headers, rows=wm_rows, filename="winding_matrix.csv")
+
         # 4. Plots and PDF
         saver.pdf.append("heading", "Wind Turbine Generator Simulation Report")
+        saver.pdf.append("text", "Winding Matrix Notation: In winding_matrix.csv, positive numbers mean positive polarity (up). Negative numbers mean negative polarity (down). 0 means empty.")
         
         # Power / Voltages Text
         saver.pdf.append("text", f"Phases: {self.generator.wind.phases}")

@@ -292,6 +292,8 @@ class AnalyticsPanel(ctk.CTkFrame):
             
         overtone_magnitudes = PostProcess.harmonics(dt, fundamental_frequency, phase_voltages)
         thd_values = PostProcess.THD(overtone_magnitudes)
+        self.avg_thd = np.mean(thd_values) 
+        self.overtone_avg = np.mean(overtone_magnitudes, axis=0)
         
         self.current_overtone_magnitudes = overtone_magnitudes
         self.current_thd_values = thd_values
@@ -321,6 +323,26 @@ class AnalyticsPanel(ctk.CTkFrame):
                 text_colors=[p_color, None, None, None, None, None]
             )
             self.overtones_table_data["rows"].append(row_data)
+
+        avg_lbl = self.app.lang_manager.get("table_harmonics.average_row", "Average") if self.app else "Average"
+        avg_mags = self.overtone_avg
+        avg_thd = self.avg_thd
+        
+        avg_row = [
+            avg_lbl, 
+            f"{avg_mags[0]:.2f} V", 
+            f"{avg_mags[1]:.2f} V", 
+            f"{avg_mags[2]:.2f} V", 
+            f"{avg_mags[3]:.2f} V", 
+            f"{avg_thd*100:.2f} %"
+        ]
+        
+        table.add_row(
+            row_data=avg_row,
+            text_colors=[None, None, None, None, None, None],
+            is_summary=True
+        )
+        self.overtones_table_data["rows"].append(avg_row)
 
     def update_language(self):
         if not self.app:

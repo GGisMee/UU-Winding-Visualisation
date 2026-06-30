@@ -418,7 +418,6 @@ class PostProcess:
         return THD
 
 
-
     @staticmethod
     def plot_spectrum(frequencies:np.ndarray, magnitudes:np.ndarray, goal_frequencies:np.ndarray, phases:int):
         # 5. Plotta spektrumet

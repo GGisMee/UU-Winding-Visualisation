@@ -46,6 +46,7 @@ total_row = "Total"
 [table_harmonics]
 headers = ["Phase", "1st (f0)", "3rd (3f0)", "5th (5f0)", "7th (7f0)", "THD"]
 tooltips = ["Electrical phase", "Fundamental harmonic magnitude", "Third harmonic magnitude", "Fifth harmonic magnitude", "Seventh harmonic magnitude", "Total Harmonic Distortion (THD)"]
+average_row = "Average"
 
 [canvas]
 title = "CAD CANVAS"

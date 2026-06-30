@@ -46,6 +46,7 @@ total_row = "Totalt"
 [table_harmonics]
 headers = ["Fas", "1:a (f0)", "3:e (3f0)", "5:e (5f0)", "7:e (7f0)", "THD"]
 tooltips = ["Elektrisk fas", "Grundtonsamplitud", "Tredje harmoniska amplitud", "Femte harmoniska amplitud", "Sjunde harmoniska amplitud", "Total harmonisk distorsion (THD)"]
+average_row = "Medelvärde"
 
 [canvas]
 title = "CAD RITARE"
