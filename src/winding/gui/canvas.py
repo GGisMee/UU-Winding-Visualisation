@@ -54,8 +54,6 @@ class CADCanvas(ctk.CTkFrame):
         self.canvas.pack(fill="both", expand=True, padx=15, pady=(5, 5))
 
         # Overlay frame
-        from .content import WINDING_GUIDE_TEXT
-        
         self.overlay_frame = ctk.CTkFrame(self.canvas, fg_color=Theme.BG_SURFACE.value, corner_radius=0)
         self.overlay_textbox = ctk.CTkTextbox(
             self.overlay_frame, 
@@ -75,15 +73,7 @@ class CADCanvas(ctk.CTkFrame):
         self.overlay_textbox._textbox.tag_config("body", font=font_body, justify="left", spacing1=0, spacing2=8, spacing3=10)
         self.overlay_textbox._textbox.tag_config("list_item", font=font_body, justify="left", spacing1=4, spacing2=8, spacing3=4, lmargin1=0, lmargin2=22)
         
-        for line in WINDING_GUIDE_TEXT.split('\n'):
-            if line.startswith('## '):
-                self.overlay_textbox.insert("end", line[3:] + "\n", "h2")
-            elif line.startswith('• ') or (len(line) > 2 and line[0].isdigit() and line[1:3] == '. '):
-                self.overlay_textbox.insert("end", line + "\n", "list_item")
-            else:
-                self.overlay_textbox.insert("end", line + "\n", "body")
-                
-        self.overlay_textbox.configure(state="disabled")
+        self.populate_guide_text()
 
         # Bind resize event to redraw canvas dynamically
         self.canvas.bind("<Configure>", lambda e: self.update_geometry())
@@ -323,4 +313,30 @@ class CADCanvas(ctk.CTkFrame):
         if hasattr(self, 'tooltip_title'):
             tooltip_msg = self.app.lang_manager.get("tooltips.canvas_title", "Winding Layout: Change the phase and direction of the winding for each slot and position to wind the generator.\n\nLeft-click to assign positive polarity, right-click to assign negative polarity. Use number keys to select the active phase.")
             self.tooltip_title.update_text(tooltip_msg)
+        if hasattr(self, 'overlay_textbox'):
+            self.populate_guide_text()
         self.update_geometry()
+
+    def populate_guide_text(self):
+        self.overlay_textbox.configure(state="normal")
+        self.overlay_textbox.delete("1.0", "end")
+        
+        if self.app:
+            guide_text = self.app.lang_manager.get("canvas.guide_text", "")
+            # Fallback to English hardcoded text if key is missing/untranslated
+            if guide_text.startswith("[") and guide_text.endswith("]"):
+                from .content import WINDING_GUIDE_TEXT
+                guide_text = WINDING_GUIDE_TEXT
+        else:
+            from .content import WINDING_GUIDE_TEXT
+            guide_text = WINDING_GUIDE_TEXT
+            
+        for line in guide_text.split('\n'):
+            if line.startswith('## '):
+                self.overlay_textbox.insert("end", line[3:] + "\n", "h2")
+            elif line.startswith('• ') or (len(line) > 2 and line[0].isdigit() and line[1:3] == '. '):
+                self.overlay_textbox.insert("end", line + "\n", "list_item")
+            else:
+                self.overlay_textbox.insert("end", line + "\n", "body")
+                
+        self.overlay_textbox.configure(state="disabled")

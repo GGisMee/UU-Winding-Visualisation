@@ -53,6 +53,23 @@ title = "CAD RITARE"
 chart_title = "Lindningslayout"
 legend_empty = "Tom"
 legend_phase = "Fas {phase}"
+guide_text = """Lindningslayouten låter dig definiera den fysiska placeringen av statorlindningarna i generatorn. Denna layout representeras som en matris där du mappar elektriska faser till specifika spår och poler.
+
+## Lindningsmatrisen
+• Kolumner (Spår): Varje kolumn representerar ett fysiskt spår i statorn.
+• Rader (Positioner): Varje rad representerar en lindningsposition eller ett lager i ett spår.
+• Celler: Varje cell definierar vilken elektrisk fas som är placerad i den specifika positionen och spåret, samt dess lindningsriktning.
+
+## Hur man konfigurerar
+1. Välj fas: Använd siffertangenterna (1-9) på tangentbordet för att välja den aktiva fasen. Den nuvarande aktiva fasen avgör vilken fas som tilldelas när du klickar.
+2. Tilldela positiv polaritet: Vänsterklicka på en cell för att tilldela den aktiva fasen en positiv lindningsriktning (ström som flyter in i bilden). Detta representeras av ett fyllt färgblock.
+3. Tilldela negativ polaritet: Högerklicka på en cell för att tilldela den aktiva fasen en negativ lindningsriktning (ström som flyter ut ur bilden). Detta representeras av ett streckat mönster.
+Det rekommenderas därför att använda en mus.
+
+Genom att noggrant arrangera faser och polariteter över poler och spår kan du optimera den genererade spänningen och minimera oönskade harmoniska övertoner.
+• Håll skillnaden mellan upp- och nerlindningar till 0 eller 1 eftersom det annars är nästan omöjligt att linda.
+• Försök att använda nästan alla positioner i spåren, eller åtminstone 80% eller mer."""
+
 
 [tabs]
 settings = "Inställningar"
