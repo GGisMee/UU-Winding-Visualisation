@@ -84,7 +84,7 @@ The UI is divided into a three-panel workspace in CustomTkinter using an **Event
    * Renders a live CAD-style blueprint of the generator and its winding configuration.
 3. **Right Panel (`AnalyticsPanel` / `analytics.py`)**:
    * Displays a warning bar when inputs have changed to prompt a simulation rerun.
-   * Houses the "Run Simulation" button.
+   * Houses the "Simulate" button.
    * **Phase Voltages Chart**: Plots the simulated time-domain phase voltages of the generator, including noise and the sum of all phases.
    * **Spectrum Chart**: Displays the frequency-domain amplitude spectrum (FFT) to visualize fundamental frequencies and harmonics.
 

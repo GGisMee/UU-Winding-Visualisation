@@ -24,6 +24,7 @@ lbl_field_profile = "Fältprofil"
 
 [analytics]
 title = "ANALYS & RESULTAT"
+btn_export = "Exportera"
 chart_title = "Fasspänningar över tid"
 xlabel = "Tid [s]"
 ylabel = "Spänning [V]"

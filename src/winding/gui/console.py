@@ -77,14 +77,32 @@ class ConsolePanel(ctk.CTkFrame):
         self.create_widgets()
 
     def create_widgets(self):
-        # 1. Title Label
+        # 1. Header Frame
+        self.header_frame = ctk.CTkFrame(self, fg_color="transparent", height=36)
+        self.header_frame.pack(fill="x", padx=15, pady=(15, 5))
+
+        # Title Label inside Header Frame
         self.lbl_title = ctk.CTkLabel(
-            self, 
+            self.header_frame, 
             text="CONTROL CONSOLE", 
             font=Theme.fonts.TITLE, 
             text_color=Theme.TEXT_ACCENT.value
         )
-        self.lbl_title.pack(anchor="w", padx=15, pady=(15, 5))
+        self.lbl_title.pack(side="left")
+
+        # Simulate Button inside Header Frame, right-aligned
+        self.btn_simulate = ctk.CTkButton(
+            self.header_frame, 
+            text="Simulate", 
+            font=Theme.fonts.BODY_BOLD,
+            fg_color=Theme.BUTTON_BG.value,
+            hover_color=Theme.BUTTON_HOVER.value,
+            text_color=Theme.TEXT_MAIN.value,
+            width=120,
+            height=28,
+            command=self.app.run_simulation if self.app else None
+        )
+        self.btn_simulate.pack(side="right")
 
         # 2. Main Tabs Widget
         self.tabs = ctk.CTkTabview(
@@ -170,17 +188,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.magnet_plot_card.pack(fill="x")
         self.magnet_plot_card.update_plot()
 
-        # Simulate Button
-        self.btn_simulate = ctk.CTkButton(
-            self.settings_frame, 
-            text="Simulate", 
-            font=Theme.fonts.BODY_BOLD,
-            fg_color=Theme.BUTTON_BG.value,
-            hover_color=Theme.BUTTON_HOVER.value,
-            text_color=Theme.TEXT_MAIN.value,
-            command=self.app.run_simulation if self.app else None
-        )
-        self.btn_simulate.pack(fill="x", pady=(15, 0))
+
 
     def on_change_phases(self, val):
         if self.app:

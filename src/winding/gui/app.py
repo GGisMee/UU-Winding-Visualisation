@@ -9,7 +9,7 @@ from .analytics import AnalyticsPanel
 from .theme import Theme
 from ..models.simulation import Geometry, Winding,Magnet, OperatingState, Generator, SimulateGenerator, create_steps
 from ..config import WINDOW_SCALING, NB_PERIODS
-from .components import ToolTip
+from .components import ToolTip, ToastNotification
 from .language import LanguageManager
 
 
@@ -311,5 +311,68 @@ class UnifiedSimulatorApp(ctk.CTk):
         phase_voltages = SimulateGenerator.simulate(self.generator, time_steps)
         noised_phase_voltages = SimulateGenerator.apply_noise(self.generator, phase_voltages)
         
+        self.last_sim_result = {
+            "time_steps": time_steps,
+            "phase_voltages": phase_voltages,
+            "noised_phase_voltages": noised_phase_voltages,
+            "dt": dt
+        }
+        
         self.analytics.draw_simulation_results(time_steps, noised_phase_voltages)
         self.analytics.draw_overtones_results(dt, self.generator.frequency, phase_voltages)
+
+    def export_results(self):
+        if not hasattr(self, 'last_sim_result') or not self.last_sim_result:
+            ToastNotification(self, str(self.lang_manager.get("export.no_results", "No simulation results to export. Please run a simulation first.")), is_err=True)
+            return
+
+        import tkinter.filedialog as fd
+        from ..models.export import Saver
+        
+        path = fd.askdirectory(title="Select Folder to Save Exported Results")
+        if not path:
+            return
+
+        saver = Saver()
+        
+        import datetime
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        saver.toml.append("info.run_time", now_str)
+
+        # 1. TOML
+        saver.toml.append("generator.phases", self.generator.wind.phases)
+        saver.toml.append("generator.poles", self.generator.wind.poles)
+        saver.toml.append("generator.slots", self.generator.wind.slots)
+        saver.toml.append("generator.positions", self.generator.wind.positions)
+        saver.toml.append("generator.rpm", self.generator.state.RPM)
+        saver.toml.append("generator.magnet_function", self.generator.magnet.magnet_function.name)
+
+        # 2. CSV - Phase and Overtone tables from Analytics Panel
+        if hasattr(self.analytics, 'windings_table_data'):
+            windings_data = self.analytics.windings_table_data
+            if windings_data["rows"]:
+                saver.csv.append(headers=windings_data["headers"], rows=windings_data["rows"], filename="phase_table.csv")
+
+        if hasattr(self.analytics, 'overtones_table_data'):
+            overtones_data = self.analytics.overtones_table_data
+            if overtones_data["rows"]:
+                saver.csv.append(headers=overtones_data["headers"], rows=overtones_data["rows"], filename="overtone_table.csv")
+
+        # 4. Plots and PDF
+        saver.pdf.append("heading", "Wind Turbine Generator Simulation Report")
+        
+        # Power / Voltages Text
+        saver.pdf.append("text", f"Phases: {self.generator.wind.phases}")
+        saver.pdf.append("text", f"Poles: {self.generator.wind.poles}")
+        saver.pdf.append("text", f"RPM: {self.generator.state.RPM}")
+        
+        if hasattr(self.analytics, 'figure'):
+            saver.plots.append("phase_voltages", self.analytics.figure)
+            saver.pdf.append("heading", "Phase Voltages")
+            saver.pdf.append("image", self.analytics.figure)
+            
+        try:
+            saver.save(path)
+            ToastNotification(self, f"{self.lang_manager.get('export.success', 'Results exported successfully to')}\n{path}/simulation_results.zip", duration=4000)
+        except Exception as e:
+            ToastNotification(self, f"{self.lang_manager.get('export.failed', 'Failed to Export:')}\n{str(e)}", is_err=True, duration=5000)

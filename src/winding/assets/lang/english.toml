@@ -24,6 +24,7 @@ lbl_field_profile = "Field Profile"
 
 [analytics]
 title = "ANALYTICS & RESULTS"
+btn_export = "Export"
 chart_title = "Phase Voltages Over Time"
 xlabel = "Time [s]"
 ylabel = "Voltage [V]"

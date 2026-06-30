@@ -8,6 +8,7 @@ dependencies = [
     "customtkinter>=5.2.2",
     "matplotlib>=3.11.0",
     "numpy>=2.4.6",
+    "tomli-w>=1.2.0",
 ]
 
 [project.scripts]

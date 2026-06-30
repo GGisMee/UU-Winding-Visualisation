@@ -28,14 +28,32 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.current_dt = None
         self.current_fundamental_frequency = None
 
-        # Title Label
+        # 1. Header Frame
+        self.header_frame = ctk.CTkFrame(self, fg_color="transparent", height=36)
+        self.header_frame.pack(fill="x", padx=15, pady=(15, 5))
+
+        # Title Label inside Header Frame
         self.lbl_title = ctk.CTkLabel(
-            self, 
+            self.header_frame, 
             text="ANALYTICS & RESULTS", 
             font=Theme.fonts.SUBTITLE, 
             text_color=Theme.TEXT_ACCENT.value
         )
-        self.lbl_title.pack(anchor="w", padx=15, pady=(15, 5))
+        self.lbl_title.pack(side="left")
+
+        # Export Button inside Header Frame, right-aligned
+        self.btn_export = ctk.CTkButton(
+            self.header_frame, 
+            text="Export", 
+            font=Theme.fonts.BODY_BOLD,
+            fg_color=Theme.BUTTON_BG.value, 
+            hover_color=Theme.BUTTON_HOVER.value,
+            text_color=Theme.TEXT_MAIN.value,
+            width=120,
+            height=28,
+            command=getattr(self.app, 'export_results', None) if self.app else None
+        )
+        self.btn_export.pack(side="right")
 
         # Main Tabview
         self.tabs = ctk.CTkTabview(
@@ -243,21 +261,27 @@ class AnalyticsPanel(ctk.CTkFrame):
         phase_colors = Theme.PHASE_COLORS.value
         
         phase_label_fmt = self.app.lang_manager.get("table_windings.phase_row") if self.app else "Phase {row}"
+        self.windings_table_data = {"headers": headers, "rows": []}
+
         for phase_idx in range(generator.wind.phases):
             row = phase_idx + 1
             p_color = phase_colors[phase_idx % len(phase_colors)]
+            row_data = [phase_label_fmt.format(row=row), total[phase_idx], up[phase_idx], down[phase_idx]]
             
             table.add_row(
-                row_data=[phase_label_fmt.format(row=row), total[phase_idx], up[phase_idx], down[phase_idx]],
+                row_data=row_data,
                 text_colors=[p_color, None, None, None]
             )
+            self.windings_table_data["rows"].append(row_data)
 
         total_lbl = self.app.lang_manager.get("table_windings.total_row", "Total") if self.app else "Total"
+        summary_row = [total_lbl, total.sum(), up.sum(), down.sum()]
         table.add_row(
-            row_data=[total_lbl, total.sum(), up.sum(), down.sum()],
+            row_data=summary_row,
             text_colors=[None, None, None, None],
             is_summary=True
         )
+        self.windings_table_data["rows"].append(summary_row)
 
     def draw_overtones_results(self, dt, fundamental_frequency, phase_voltages):
         self.current_dt = dt
@@ -267,8 +291,10 @@ class AnalyticsPanel(ctk.CTkFrame):
             widget.destroy()
             
         overtone_magnitudes = PostProcess.harmonics(dt, fundamental_frequency, phase_voltages)
-        
         thd_values = PostProcess.THD(overtone_magnitudes)
+        
+        self.current_overtone_magnitudes = overtone_magnitudes
+        self.current_thd_values = thd_values
 
         from .components import DataTable
         
@@ -280,23 +306,29 @@ class AnalyticsPanel(ctk.CTkFrame):
         phase_colors =Theme.PHASE_COLORS.value
         
         phase_label_fmt = self.app.lang_manager.get("table_windings.phase_row") if self.app else "Phase {row}"
+        self.overtones_table_data = {"headers": headers, "rows": []}
+
         for phase_idx in range(phase_voltages.shape[0]):
             row = phase_idx + 1
             p_color = phase_colors[phase_idx % len(phase_colors)]
             mags = overtone_magnitudes[phase_idx]
             thd = thd_values[phase_idx]
             
+            row_data = [phase_label_fmt.format(row=row), f"{mags[0]:.2f} V", f"{mags[1]:.2f} V", f"{mags[2]:.2f} V", f"{mags[3]:.2f} V", f"{thd*100:.2f} %"]
+            
             table.add_row(
-                row_data=[phase_label_fmt.format(row=row), f"{mags[0]:.2f} V", f"{mags[1]:.2f} V", f"{mags[2]:.2f} V", f"{mags[3]:.2f} V", f"{thd*100:.2f} %"],
+                row_data=row_data,
                 text_colors=[p_color, None, None, None, None, None]
             )
+            self.overtones_table_data["rows"].append(row_data)
 
     def update_language(self):
         if not self.app:
             return
             
-        # Update main Title & warning banners
+        # Update main Title, export button & warning banners
         self.lbl_title.configure(text=self.app.lang_manager.get("analytics.title"))
+        self.btn_export.configure(text=self.app.lang_manager.get("analytics.btn_export", "Export"))
         self.lbl_warning.configure(text=self.app.lang_manager.get("analytics.lbl_warning"))
         self.lbl_loading.configure(text=self.app.lang_manager.get("analytics.lbl_loading"))
         
